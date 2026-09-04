@@ -1,0 +1,62 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { shuffledOrder, TOTAL_ROUNDS } from "@/lib/domain/draft";
+
+export async function POST() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_commissioner")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.is_commissioner) {
+    return NextResponse.json({ error: "Commissioner only." }, { status: 403 });
+  }
+
+  const { data: activeSession } = await supabase
+    .from("draft_sessions")
+    .select("id")
+    .in("status", ["pending", "active"])
+    .maybeSingle();
+  if (activeSession) {
+    return NextResponse.json({ error: "A draft is already in progress." }, { status: 409 });
+  }
+
+  const { data: players, error: playersError } = await supabase.from("profiles").select("id");
+  if (playersError) {
+    return NextResponse.json({ error: playersError.message }, { status: 500 });
+  }
+  if (!players || players.length !== 5) {
+    return NextResponse.json(
+      { error: `Expected 5 players, found ${players?.length ?? 0}.` },
+      { status: 400 },
+    );
+  }
+
+  const snakeOrder = shuffledOrder(players.map((p) => p.id));
+
+  const { data: session, error } = await supabase
+    .from("draft_sessions")
+    .insert({
+      status: "active",
+      total_rounds: TOTAL_ROUNDS,
+      current_round: 1,
+      current_pick_index: 0,
+      snake_order: snakeOrder,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ session });
+}
