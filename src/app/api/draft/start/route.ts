@@ -29,7 +29,10 @@ export async function POST() {
     return NextResponse.json({ error: "A draft is already in progress." }, { status: 409 });
   }
 
-  const { data: players, error: playersError } = await supabase.from("profiles").select("id");
+  const { data: players, error: playersError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("is_demo", false);
   if (playersError) {
     return NextResponse.json({ error: playersError.message }, { status: 500 });
   }

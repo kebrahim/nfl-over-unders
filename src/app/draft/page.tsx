@@ -22,7 +22,7 @@ export default async function DraftPage() {
         .order("conference")
         .order("division")
         .order("name"),
-      supabase.from("profiles").select("id, display_name"),
+      supabase.from("profiles").select("id, display_name").eq("is_demo", false),
       supabase
         .from("draft_sessions")
         .select("id, status, snake_order, current_pick_index, total_rounds, current_round")

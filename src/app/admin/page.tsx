@@ -45,7 +45,11 @@ export default async function AdminPage() {
       .select("id, pick_number, team_id, side, user_id")
       .order("pick_number", { ascending: false })
       .limit(10),
-    supabase.from("profiles").select("id, display_name, email").order("display_name"),
+    supabase
+      .from("profiles")
+      .select("id, display_name, email")
+      .eq("is_demo", false)
+      .order("display_name"),
     supabase.from("division_predictions").select("user_id, division, predicted_team_id"),
     supabase.from("tiebreaker_predictions").select("user_id, points_guess"),
     supabase.from("draft_picks").select("user_id, team_id, side, pick_number"),
