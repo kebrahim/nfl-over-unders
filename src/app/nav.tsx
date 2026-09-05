@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./actions";
+import { MobileNav } from "./mobile-nav";
 
 const LINKS = [
   { href: "/draft", label: "Draft" },
@@ -30,7 +31,7 @@ export async function Nav() {
   }
 
   return (
-    <header className="border-b border-border bg-surface">
+    <header className="relative border-b border-border bg-surface">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <Link
@@ -69,6 +70,7 @@ export async function Nav() {
         )}
 
         <div className="flex items-center gap-4 text-sm">
+          {user && <MobileNav links={LINKS} showAdmin={isCommissioner} />}
           {user ? (
             <>
               <span className="hidden text-ink-muted sm:inline">{displayName}</span>
