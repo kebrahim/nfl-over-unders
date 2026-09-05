@@ -12,7 +12,7 @@ export default async function AdminPage() {
   if (!profile?.is_commissioner) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-        <p>Commissioner access only.</p>
+        <p className="text-ink-muted">Commissioner access only.</p>
       </main>
     );
   }
@@ -45,22 +45,22 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 space-y-12 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Commissioner tools.</p>
+        <h1 className="font-heading text-2xl font-semibold tracking-wide text-accent uppercase">
+          Admin
+        </h1>
+        <p className="mt-1 text-sm text-ink-muted">Commissioner tools.</p>
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Draft</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Status: {session?.status ?? "not started"}
-        </p>
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">Draft</h2>
+        <p className="mt-1 text-sm text-ink-muted">Status: {session?.status ?? "not started"}</p>
         {!session || session.status === "completed" ? (
           <div className="mt-3">
             <StartDraftButton />
           </div>
         ) : null}
         {recentPicks && recentPicks.length > 0 && (
-          <ol className="mt-4 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <ol className="mt-4 space-y-1 text-sm text-ink-muted">
             {recentPicks.map((p) => (
               <li key={p.id}>
                 #{p.pick_number} — team {p.team_id} {p.side}
@@ -71,8 +71,10 @@ export default async function AdminPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Win-total lines</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Win-total lines
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
           Set before the draft starts. Use half-point lines to avoid pushes.
         </p>
         <div className="mt-4">
@@ -81,8 +83,10 @@ export default async function AdminPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Division winners</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Division winners
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
           Record the actual winners once the regular season ends.
         </p>
         <div className="mt-4">

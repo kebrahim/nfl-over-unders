@@ -21,20 +21,18 @@ export function TiebreakerForm({ existing }: { existing: number | null }) {
           min={1}
           step={1}
           defaultValue={existing ?? undefined}
-          className="w-40 rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/15"
+          className="w-40 rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
+        className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save guess"}
       </button>
-      {state.error && <p className="w-full text-sm text-red-600 dark:text-red-400">{state.error}</p>}
-      {state.success && (
-        <p className="w-full text-sm text-green-600 dark:text-green-400">Saved.</p>
-      )}
+      {state.error && <p className="w-full text-sm text-bad">{state.error}</p>}
+      {state.success && <p className="w-full text-sm text-good">Saved.</p>}
     </form>
   );
 }

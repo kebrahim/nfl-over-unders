@@ -25,17 +25,17 @@ export function WinTotalForm({ teams }: { teams: Team[] }) {
               step={0.5}
               name={`line:${team.id}`}
               defaultValue={team.win_total_line ?? ""}
-              className="w-20 rounded-md border border-black/10 bg-transparent px-2 py-1 text-right dark:border-white/15"
+              className="w-20 rounded-md border border-border bg-bg px-2 py-1 text-right text-ink focus:border-accent focus:outline-none"
             />
           </label>
         ))}
       </div>
-      {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
-      {state.success && <p className="text-sm text-green-600 dark:text-green-400">Saved.</p>}
+      {state.error && <p className="text-sm text-bad">{state.error}</p>}
+      {state.success && <p className="text-sm text-good">Saved.</p>}
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
+        className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save win totals"}
       </button>

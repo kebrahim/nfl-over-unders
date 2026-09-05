@@ -15,15 +15,13 @@ export function LoginForm() {
   const pending = mode === "sign-in" ? signInPending : signUpPending;
 
   return (
-    <div className="w-full max-w-sm space-y-6">
-      <div className="flex rounded-lg border border-black/10 p-1 dark:border-white/15">
+    <div className="w-full max-w-sm space-y-6 rounded-xl border border-border bg-surface p-6">
+      <div className="flex rounded-lg border border-border p-1">
         <button
           type="button"
           onClick={() => setMode("sign-in")}
           className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-            mode === "sign-in"
-              ? "bg-foreground text-background"
-              : "text-zinc-600 dark:text-zinc-400"
+            mode === "sign-in" ? "bg-accent text-accent-ink" : "text-ink-muted hover:text-ink"
           }`}
         >
           Sign in
@@ -32,9 +30,7 @@ export function LoginForm() {
           type="button"
           onClick={() => setMode("sign-up")}
           className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-            mode === "sign-up"
-              ? "bg-foreground text-background"
-              : "text-zinc-600 dark:text-zinc-400"
+            mode === "sign-up" ? "bg-accent text-accent-ink" : "text-ink-muted hover:text-ink"
           }`}
         >
           Sign up
@@ -52,7 +48,7 @@ export function LoginForm() {
               name="displayName"
               type="text"
               required
-              className="w-full rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/15"
+              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
             />
           </div>
         )}
@@ -66,7 +62,7 @@ export function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/15"
+            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
           />
         </div>
         <div className="space-y-1">
@@ -80,16 +76,16 @@ export function LoginForm() {
             required
             minLength={6}
             autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-            className="w-full rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/15"
+            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
           />
         </div>
 
-        {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+        {state.error && <p className="text-sm text-bad">{state.error}</p>}
 
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
+          className="w-full rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
         >
           {pending ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Create account"}
         </button>

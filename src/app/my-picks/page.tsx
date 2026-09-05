@@ -53,34 +53,36 @@ export default async function MyPicksPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 space-y-12 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">My Picks</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <h1 className="font-heading text-2xl font-semibold tracking-wide text-accent uppercase">
+          My Picks
+        </h1>
+        <p className="mt-1 text-sm text-ink-muted">
           {totalPoints} draft point{totalPoints === 1 ? "" : "s"} so far.
         </p>
 
-        <div className="mt-6 overflow-hidden rounded-lg border border-black/10 dark:border-white/15">
+        <div className="mt-6 overflow-hidden rounded-lg border border-border bg-surface">
           <table className="w-full text-sm">
-            <thead className="bg-black/[.03] text-left dark:bg-white/[.05]">
+            <thead className="bg-surface-2 text-left">
               <tr>
-                <th className="px-4 py-2 font-medium">Team</th>
-                <th className="px-4 py-2 font-medium">Side</th>
-                <th className="px-4 py-2 font-medium">Line</th>
-                <th className="px-4 py-2 font-medium">Record</th>
-                <th className="px-4 py-2 font-medium">Points</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Team</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Side</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Line</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Record</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Points</th>
               </tr>
             </thead>
             <tbody>
               {(pickScores ?? []).map((pick) => {
                 const team = teamById.get(pick.team_id);
                 return (
-                  <tr key={pick.pick_id} className="border-t border-black/10 dark:border-white/15">
+                  <tr key={pick.pick_id} className="border-t border-border">
                     <td className="px-4 py-2 font-medium">{team?.name ?? pick.team_id}</td>
                     <td className="px-4 py-2 capitalize">{pick.side}</td>
                     <td className="px-4 py-2">{pick.win_total_line ?? "—"}</td>
-                    <td className="px-4 py-2 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-2 text-ink-muted">
                       {pick.wins}-{pick.games_played - pick.wins} ({pick.games_played}/17)
                     </td>
-                    <td className="px-4 py-2 font-semibold">
+                    <td className="px-4 py-2 font-semibold text-accent">
                       {pick.resolved ? pick.points : "pending"}
                     </td>
                   </tr>
@@ -88,7 +90,7 @@ export default async function MyPicksPage() {
               })}
               {(!pickScores || pickScores.length === 0) && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-zinc-500">
+                  <td colSpan={5} className="px-4 py-6 text-center text-ink-muted">
                     No picks yet — head to the draft.
                   </td>
                 </tr>
@@ -99,8 +101,10 @@ export default async function MyPicksPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Division winners</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Division winners
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
           1 point per correct pick. Lock these in before Week 1.
         </p>
         <div className="mt-4">
@@ -109,8 +113,10 @@ export default async function MyPicksPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Tiebreaker</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Tiebreaker
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
           Only used if the final standings are tied.
         </p>
         <div className="mt-4">

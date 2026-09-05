@@ -28,19 +28,22 @@ export async function Nav() {
   }
 
   return (
-    <header className="border-b border-black/10 dark:border-white/15">
+    <header className="border-b border-border bg-surface">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          NFL Over/Unders
+        <Link
+          href="/"
+          className="font-heading text-lg font-semibold tracking-wide text-accent uppercase"
+        >
+          Over/Unders
         </Link>
 
         {user && (
-          <div className="hidden items-center gap-6 text-sm sm:flex">
+          <div className="hidden items-center gap-6 text-sm font-medium sm:flex">
             {LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-zinc-600 transition-colors hover:text-foreground dark:text-zinc-400"
+                className="text-ink-muted transition-colors hover:text-ink"
               >
                 {link.label}
               </Link>
@@ -48,7 +51,7 @@ export async function Nav() {
             {isCommissioner && (
               <Link
                 href="/admin"
-                className="text-zinc-600 transition-colors hover:text-foreground dark:text-zinc-400"
+                className="text-ink-muted transition-colors hover:text-ink"
               >
                 Admin
               </Link>
@@ -59,17 +62,15 @@ export async function Nav() {
         <div className="flex items-center gap-4 text-sm">
           {user ? (
             <>
-              <span className="hidden text-zinc-600 sm:inline dark:text-zinc-400">
-                {displayName}
-              </span>
+              <span className="hidden text-ink-muted sm:inline">{displayName}</span>
               <form action={signOut}>
-                <button type="submit" className="font-medium hover:underline">
+                <button type="submit" className="font-medium hover:text-accent">
                   Sign out
                 </button>
               </form>
             </>
           ) : (
-            <Link href="/login" className="font-medium hover:underline">
+            <Link href="/login" className="font-medium hover:text-accent">
               Sign in
             </Link>
           )}

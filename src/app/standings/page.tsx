@@ -18,15 +18,19 @@ export default async function StandingsPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">Standings</h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+      <h1 className="font-heading text-2xl font-semibold tracking-wide text-accent uppercase">
+        Standings
+      </h1>
+      <p className="mt-1 text-sm text-ink-muted">
         Live records against each team&apos;s win-total line.
       </p>
 
       <div className="mt-8 grid gap-8 sm:grid-cols-2">
         {CONFERENCES.map((conference) => (
           <div key={conference} className="space-y-6">
-            <h2 className="text-lg font-semibold">{conference}</h2>
+            <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+              {conference}
+            </h2>
             {DIVISION_NAMES.map((division) => {
               const divisionTeams = (teams ?? [])
                 .filter((t) => t.conference === conference && t.division === division)
@@ -37,11 +41,14 @@ export default async function StandingsPage() {
                 });
 
               return (
-                <div key={division}>
-                  <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                <div
+                  key={division}
+                  className="overflow-hidden rounded-lg border border-border bg-surface"
+                >
+                  <h3 className="border-b border-border bg-surface-2 px-3 py-1.5 text-xs font-medium tracking-wide text-ink-muted uppercase">
                     {conference} {division}
                   </h3>
-                  <table className="mt-2 w-full text-sm">
+                  <table className="w-full text-sm">
                     <tbody>
                       {divisionTeams.map((team) => {
                         const record = recordByTeam.get(team.id);
@@ -59,27 +66,24 @@ export default async function StandingsPage() {
                             : null;
 
                         return (
-                          <tr
-                            key={team.id}
-                            className="border-t border-black/10 dark:border-white/15"
-                          >
-                            <td className="py-1.5 pr-2 font-medium">{team.name}</td>
-                            <td className="py-1.5 pr-2 text-zinc-600 dark:text-zinc-400">
+                          <tr key={team.id} className="border-t border-border first:border-t-0">
+                            <td className="px-3 py-1.5 font-medium">{team.name}</td>
+                            <td className="px-3 py-1.5 text-ink-muted">
                               {wins}-{losses}
                               {ties ? `-${ties}` : ""}
                             </td>
-                            <td className="py-1.5 pr-2 text-zinc-500">
+                            <td className="px-3 py-1.5 text-ink-muted">
                               {line != null ? `Line ${line}` : "No line set"}
                             </td>
-                            <td className="py-1.5 text-right">
+                            <td className="px-3 py-1.5 text-right">
                               {onPace && (
                                 <span
                                   className={
                                     onPace === "over"
-                                      ? "text-green-600 dark:text-green-400"
+                                      ? "text-good"
                                       : onPace === "under"
-                                        ? "text-red-600 dark:text-red-400"
-                                        : "text-zinc-500"
+                                        ? "text-bad"
+                                        : "text-ink-muted"
                                   }
                                 >
                                   {onPace === "push" ? "on the line" : `on pace: ${onPace}`}

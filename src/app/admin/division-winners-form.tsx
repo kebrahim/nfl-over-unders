@@ -55,7 +55,7 @@ export function DivisionWinnersForm({
               defaultValue={existing.get(division) ?? ""}
               disabled={pending === division}
               onChange={(e) => setWinner(division, Number(e.target.value))}
-              className="rounded-md border border-black/10 bg-transparent px-2 py-1 dark:border-white/15"
+              className="rounded-md border border-border bg-bg px-2 py-1 text-ink focus:border-accent focus:outline-none"
             >
               <option value="" disabled>
                 — select —
@@ -69,7 +69,7 @@ export function DivisionWinnersForm({
           </label>
         );
       })}
-      {error && <p className="col-span-full text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="col-span-full text-sm text-bad">{error}</p>}
     </div>
   );
 }

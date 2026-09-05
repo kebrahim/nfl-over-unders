@@ -21,13 +21,13 @@ const STEPS = [
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center bg-zinc-50 font-sans dark:bg-black">
+    <main className="flex flex-1 flex-col items-center">
       <div className="flex w-full max-w-3xl flex-1 flex-col items-center gap-12 px-6 py-24 text-center">
         <div className="space-y-4">
-          <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            NFL Over/Unders
+          <h1 className="font-heading text-5xl font-semibold tracking-wide text-ink uppercase">
+            NFL <span className="text-accent">Over/Unders</span>
           </h1>
-          <p className="mx-auto max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+          <p className="mx-auto max-w-md text-lg leading-8 text-ink-muted">
             A season-long contest for 5 friends: draft NFL win-total
             over/unders, then see who calls it best.
           </p>
@@ -37,10 +37,12 @@ export default function Home() {
           {STEPS.map((step) => (
             <div
               key={step.title}
-              className="rounded-lg border border-black/10 p-4 dark:border-white/15"
+              className="rounded-lg border border-border bg-surface p-4"
             >
-              <h2 className="font-medium text-black dark:text-zinc-50">{step.title}</h2>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{step.body}</p>
+              <h2 className="font-heading font-semibold tracking-wide text-accent uppercase">
+                {step.title}
+              </h2>
+              <p className="mt-1 text-sm text-ink-muted">{step.body}</p>
             </div>
           ))}
         </div>
@@ -48,13 +50,13 @@ export default function Home() {
         <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
           <Link
             href="/draft"
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-accent-ink transition-colors hover:bg-accent-hover"
           >
             Go to the draft
           </Link>
           <Link
             href="/leaderboard"
-            className="flex h-12 items-center justify-center rounded-full border border-solid border-black/[.08] px-6 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            className="flex h-12 items-center justify-center rounded-full border border-border px-6 text-ink transition-colors hover:bg-surface-2"
           >
             View leaderboard
           </Link>

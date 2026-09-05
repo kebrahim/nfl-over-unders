@@ -43,10 +43,10 @@ export default async function DraftPage() {
   if (!session) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Draft</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          The draft hasn&apos;t started yet.
-        </p>
+        <h1 className="font-heading text-2xl font-semibold tracking-wide text-accent uppercase">
+          Draft
+        </h1>
+        <p className="mt-2 text-sm text-ink-muted">The draft hasn&apos;t started yet.</p>
         {profile?.is_commissioner && (
           <div className="mt-6">
             <StartDraftButton />
@@ -58,7 +58,9 @@ export default async function DraftPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">Draft</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-wide text-accent uppercase">
+        Draft
+      </h1>
       <DraftBoard
         session={session}
         initialPicks={picks ?? []}

@@ -109,26 +109,23 @@ export function DraftBoard({
 
   return (
     <div className="mt-6 space-y-8">
-      <div className="rounded-lg border border-black/10 p-4 dark:border-white/15">
+      <div className="rounded-lg border border-border bg-surface p-4">
         {session.status === "completed" ? (
-          <p className="font-medium">Draft complete.</p>
+          <p className="font-heading font-semibold tracking-wide text-accent uppercase">
+            Draft complete
+          </p>
         ) : (
           <p className="font-medium">
             Round {session.current_round} of {session.total_rounds} — on the clock:{" "}
-            <span className="text-black dark:text-white">
+            <span className="text-accent">
               {onTheClock ? playerById.get(onTheClock)?.display_name ?? "…" : "—"}
             </span>
-            {isMyTurn && <span className="ml-2 text-green-600 dark:text-green-400">(you!)</span>}
+            {isMyTurn && <span className="ml-2 text-good">(you!)</span>}
           </p>
         )}
-        <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+        <div className="mt-2 flex flex-wrap gap-2 text-xs text-ink-muted">
           {session.snake_order.map((playerId, i) => (
-            <span
-              key={i}
-              className={
-                i === onTheClockIndex ? "font-semibold text-black dark:text-white" : ""
-              }
-            >
+            <span key={i} className={i === onTheClockIndex ? "font-semibold text-accent" : ""}>
               {playerById.get(playerId)?.display_name ?? "?"}
               {i < session.snake_order.length - 1 ? " ·" : ""}
             </span>
@@ -136,7 +133,7 @@ export function DraftBoard({
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-bad">{error}</p>}
 
       <div className="flex gap-2">
         <button
@@ -144,8 +141,8 @@ export function DraftBoard({
           onClick={() => setConferenceFilter(null)}
           className={`rounded-full px-3 py-1 text-xs font-medium ${
             conferenceFilter === null
-              ? "bg-foreground text-background"
-              : "border border-black/10 dark:border-white/15"
+              ? "bg-accent text-accent-ink"
+              : "border border-border text-ink-muted hover:text-ink"
           }`}
         >
           All
@@ -157,8 +154,8 @@ export function DraftBoard({
             onClick={() => setConferenceFilter(c)}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
               conferenceFilter === c
-                ? "bg-foreground text-background"
-                : "border border-black/10 dark:border-white/15"
+                ? "bg-accent text-accent-ink"
+                : "border border-border text-ink-muted hover:text-ink"
             }`}
           >
             {c}
@@ -171,14 +168,15 @@ export function DraftBoard({
           const overTaken = takenKeys.has(`${team.id}:over`);
           const underTaken = takenKeys.has(`${team.id}:under`);
           return (
-            <div key={team.id} className="rounded-lg border border-black/10 p-3 dark:border-white/15">
+            <div key={team.id} className="rounded-lg border border-border bg-surface p-3">
               <p className="text-sm font-medium">{team.name}</p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-ink-muted">
                 {team.conference} {team.division}
               </p>
               <div className="mt-2 flex gap-2">
                 <PickButton
                   label="Over"
+                  variant="good"
                   taken={overTaken}
                   disabled={!isMyTurn}
                   pending={pendingKey === `${team.id}:over`}
@@ -186,6 +184,7 @@ export function DraftBoard({
                 />
                 <PickButton
                   label="Under"
+                  variant="bad"
                   taken={underTaken}
                   disabled={!isMyTurn}
                   pending={pendingKey === `${team.id}:under`}
@@ -198,20 +197,22 @@ export function DraftBoard({
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Picks so far</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Picks so far
+        </h2>
         <ol className="mt-2 space-y-1 text-sm">
           {[...initialPicks].reverse().map((pick) => {
             const team = teams.find((t) => t.id === pick.team_id);
             return (
-              <li key={pick.id} className="text-zinc-600 dark:text-zinc-400">
+              <li key={pick.id} className="text-ink-muted">
                 #{pick.pick_number} — {playerById.get(pick.user_id)?.display_name} took{" "}
-                <span className="text-black dark:text-white">
+                <span className="text-ink">
                   {team?.name} {pick.side}
                 </span>
               </li>
             );
           })}
-          {initialPicks.length === 0 && <li className="text-zinc-500">No picks yet.</li>}
+          {initialPicks.length === 0 && <li className="text-ink-muted">No picks yet.</li>}
         </ol>
       </div>
     </div>
@@ -220,28 +221,35 @@ export function DraftBoard({
 
 function PickButton({
   label,
+  variant,
   taken,
   disabled,
   pending,
   onClick,
 }: {
   label: string;
+  variant: "good" | "bad";
   taken: boolean;
   disabled: boolean;
   pending: boolean;
   onClick: () => void;
 }) {
+  const activeClasses =
+    variant === "good"
+      ? "border-good/40 text-good hover:border-good hover:bg-good hover:text-accent-ink"
+      : "border-bad/40 text-bad hover:border-bad hover:bg-bad hover:text-accent-ink";
+
   return (
     <button
       type="button"
       disabled={taken || disabled || pending}
       onClick={onClick}
-      className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+      className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
         taken
-          ? "cursor-not-allowed bg-black/5 text-zinc-400 dark:bg-white/5 dark:text-zinc-600"
+          ? "cursor-not-allowed border-border bg-surface-2 text-ink-muted"
           : disabled
-            ? "cursor-not-allowed border border-black/10 text-zinc-400 dark:border-white/15"
-            : "border border-black/10 hover:border-transparent hover:bg-foreground hover:text-background dark:border-white/15"
+            ? "cursor-not-allowed border-border text-ink-muted"
+            : activeClasses
       }`}
     >
       {pending ? "…" : taken ? `${label} (taken)` : label}

@@ -39,7 +39,7 @@ export function DivisionForm({
               <select
                 name={`division:${division}`}
                 defaultValue={existing.get(division) ?? ""}
-                className="w-full rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/15"
+                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
               >
                 <option value="">— pick a team —</option>
                 {options.map((team) => (
@@ -53,15 +53,13 @@ export function DivisionForm({
         })}
       </div>
 
-      {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
-      {state.success && (
-        <p className="text-sm text-green-600 dark:text-green-400">Saved.</p>
-      )}
+      {state.error && <p className="text-sm text-bad">{state.error}</p>}
+      {state.success && <p className="text-sm text-good">Saved.</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
+        className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save division picks"}
       </button>
