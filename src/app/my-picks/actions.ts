@@ -24,6 +24,15 @@ export async function saveDivisionPredictions(
     return { error: "Division picks are locked — the season has started.", success: false };
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_demo")
+    .eq("id", user.id)
+    .single();
+  if (profile?.is_demo) {
+    return { error: "Demo accounts are read-only.", success: false };
+  }
+
   const rows = DIVISIONS.map((division) => {
     const teamId = formData.get(`division:${division}`);
     return teamId ? { user_id: user.id, division: division as Division, predicted_team_id: Number(teamId) } : null;
@@ -50,6 +59,15 @@ export async function saveTiebreaker(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be signed in.", success: false };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_demo")
+    .eq("id", user.id)
+    .single();
+  if (profile?.is_demo) {
+    return { error: "Demo accounts are read-only.", success: false };
+  }
 
   const guess = Number(formData.get("points_guess"));
   if (!Number.isFinite(guess) || guess <= 0) {

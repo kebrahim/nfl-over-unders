@@ -9,7 +9,7 @@ export async function getCurrentProfile() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, email, is_commissioner")
+    .select("id, display_name, email, is_commissioner, is_demo")
     .eq("id", user.id)
     .single();
 

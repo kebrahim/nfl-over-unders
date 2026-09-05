@@ -1,27 +1,38 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/supabase/current-user";
+import { DEMO_LEAGUE_TOTAL_POINTS, DEMO_TIEBREAKER_PREDICTIONS, demoOverallLeaderboard } from "@/lib/demo/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  const supabase = await createClient();
+  const profile = await getCurrentProfile();
 
-  const [{ data: leaderboard }, { data: tiebreakers }, { data: leaguePoints }] =
-    await Promise.all([
-      supabase
-        .from("overall_leaderboard")
-        .select("user_id, display_name, draft_points, division_points, total_points")
-        .order("total_points", { ascending: false }),
-      supabase
-        .from("tiebreaker_predictions")
-        .select("user_id, points_guess"),
-      supabase.from("league_total_points").select("total_points, games_final").single(),
-    ]);
+  let rows: { user_id: string; display_name: string; draft_points: number; division_points: number; total_points: number }[];
+  let guessByUser: Map<string, number>;
+  let leaguePoints: { total_points: number; games_final: number } | null;
 
-  const rows = leaderboard ?? [];
+  if (profile?.is_demo) {
+    rows = demoOverallLeaderboard();
+    guessByUser = new Map(Object.entries(DEMO_TIEBREAKER_PREDICTIONS));
+    leaguePoints = DEMO_LEAGUE_TOTAL_POINTS;
+  } else {
+    const supabase = await createClient();
+    const [{ data: leaderboard }, { data: tiebreakers }, { data: fetchedLeaguePoints }] =
+      await Promise.all([
+        supabase
+          .from("overall_leaderboard")
+          .select("user_id, display_name, draft_points, division_points, total_points")
+          .order("total_points", { ascending: false }),
+        supabase.from("tiebreaker_predictions").select("user_id, points_guess"),
+        supabase.from("league_total_points").select("total_points, games_final").single(),
+      ]);
+    rows = leaderboard ?? [];
+    guessByUser = new Map((tiebreakers ?? []).map((t) => [t.user_id, t.points_guess]));
+    leaguePoints = fetchedLeaguePoints;
+  }
+
   const topScore = rows[0]?.total_points;
   const leadersTied = rows.filter((r) => r.total_points === topScore).length > 1;
-
-  const guessByUser = new Map((tiebreakers ?? []).map((t) => [t.user_id, t.points_guess]));
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">

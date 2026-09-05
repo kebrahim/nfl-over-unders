@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/supabase/current-user";
+import { DEMO_TEAMS, demoTeamRecords } from "@/lib/demo/data";
 import type { Conference, DivisionName } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -7,14 +9,25 @@ const CONFERENCES: Conference[] = ["AFC", "NFC"];
 const DIVISION_NAMES: DivisionName[] = ["East", "North", "South", "West"];
 
 export default async function StandingsPage() {
-  const supabase = await createClient();
+  const profile = await getCurrentProfile();
 
-  const [{ data: teams }, { data: records }] = await Promise.all([
-    supabase.from("teams").select("id, name, code, conference, division, win_total_line"),
-    supabase.from("team_records").select("team_id, wins, losses, ties, games_played"),
-  ]);
+  let teams: { id: number; name: string; conference: string; division: string; win_total_line: number | null }[];
+  let records: { team_id: number; wins: number; losses: number; ties: number; games_played: number }[];
 
-  const recordByTeam = new Map((records ?? []).map((r) => [r.team_id, r]));
+  if (profile?.is_demo) {
+    teams = DEMO_TEAMS;
+    records = demoTeamRecords();
+  } else {
+    const supabase = await createClient();
+    const [{ data: fetchedTeams }, { data: fetchedRecords }] = await Promise.all([
+      supabase.from("teams").select("id, name, code, conference, division, win_total_line"),
+      supabase.from("team_records").select("team_id, wins, losses, ties, games_played"),
+    ]);
+    teams = fetchedTeams ?? [];
+    records = fetchedRecords ?? [];
+  }
+
+  const recordByTeam = new Map(records.map((r) => [r.team_id, r]));
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -32,7 +45,7 @@ export default async function StandingsPage() {
               {conference}
             </h2>
             {DIVISION_NAMES.map((division) => {
-              const divisionTeams = (teams ?? [])
+              const divisionTeams = teams
                 .filter((t) => t.conference === conference && t.division === division)
                 .sort((a, b) => {
                   const ra = recordByTeam.get(a.id);

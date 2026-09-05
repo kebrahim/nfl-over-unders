@@ -13,6 +13,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_demo")
+    .eq("id", user.id)
+    .single();
+  if (profile?.is_demo) {
+    return NextResponse.json({ error: "Demo accounts are read-only." }, { status: 403 });
+  }
+
   const body = await request.json().catch(() => null);
   const sessionId = body?.sessionId as string | undefined;
   const teamId = Number(body?.teamId);

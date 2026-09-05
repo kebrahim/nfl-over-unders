@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { DraftBoard } from "./draft-board";
 import { StartDraftButton } from "./start-draft-button";
+import { DEMO_DRAFT_PICKS, DEMO_DRAFT_SESSION, DEMO_PLAYERS, DEMO_TEAMS, DEMO_VIEWER_ID } from "@/lib/demo/data";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function DraftPage() {
   const [{ data: profile }, { data: teams }, { data: profiles }, { data: session }] =
     await Promise.all([
       user
-        ? supabase.from("profiles").select("is_commissioner").eq("id", user.id).single()
+        ? supabase.from("profiles").select("is_commissioner, is_demo").eq("id", user.id).single()
         : Promise.resolve({ data: null }),
       supabase
         .from("teams")
@@ -29,6 +30,23 @@ export default async function DraftPage() {
         .limit(1)
         .maybeSingle(),
     ]);
+
+  if (profile?.is_demo) {
+    return (
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+        <h1 className="font-heading text-2xl font-semibold tracking-wide text-accent uppercase">
+          Draft
+        </h1>
+        <DraftBoard
+          session={DEMO_DRAFT_SESSION}
+          initialPicks={DEMO_DRAFT_PICKS}
+          teams={DEMO_TEAMS}
+          players={DEMO_PLAYERS}
+          currentUserId={DEMO_VIEWER_ID}
+        />
+      </main>
+    );
+  }
 
   const picks = session
     ? (

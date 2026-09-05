@@ -17,25 +17,34 @@ export async function Nav() {
 
   let displayName: string | null = null;
   let isCommissioner = false;
+  let isDemo = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name, is_commissioner")
+      .select("display_name, is_commissioner, is_demo")
       .eq("id", user.id)
       .single();
     displayName = profile?.display_name ?? user.email ?? null;
     isCommissioner = profile?.is_commissioner ?? false;
+    isDemo = profile?.is_demo ?? false;
   }
 
   return (
     <header className="border-b border-border bg-surface">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link
-          href="/"
-          className="font-heading text-lg font-semibold tracking-wide text-accent uppercase"
-        >
-          Over/Unders
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="font-heading text-lg font-semibold tracking-wide text-accent uppercase"
+          >
+            Over/Unders
+          </Link>
+          {isDemo && (
+            <span className="rounded-full border border-accent/40 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-accent uppercase">
+              Demo — read only
+            </span>
+          )}
+        </div>
 
         {user && (
           <div className="hidden items-center gap-6 text-sm font-medium sm:flex">

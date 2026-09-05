@@ -27,6 +27,7 @@ export interface Database {
           display_name: string;
           email: string;
           is_commissioner: boolean;
+          is_demo: boolean;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & {

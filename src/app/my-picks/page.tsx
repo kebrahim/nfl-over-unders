@@ -1,18 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/supabase/current-user";
 import type { Division } from "@/lib/supabase/types";
 import { divisionPicksLocked, DIVISION_PICKS_LOCK_AT } from "@/lib/domain/season";
+import {
+  DEMO_DIVISION_PREDICTIONS,
+  DEMO_TEAMS,
+  DEMO_TIEBREAKER_PREDICTIONS,
+  DEMO_VIEWER_ID,
+  demoDraftPickScores,
+} from "@/lib/demo/data";
 import { DivisionForm } from "./division-form";
 import { TiebreakerForm } from "./tiebreaker-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function MyPicksPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const profile = await getCurrentProfile();
 
-  if (!user) {
+  if (!profile) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
         <p>Sign in to see your picks.</p>
@@ -20,36 +25,70 @@ export default async function MyPicksPage() {
     );
   }
 
-  const [
-    { data: pickScores },
-    { data: teams },
-    { data: divisionPredictions },
-    { data: tiebreaker },
-  ] = await Promise.all([
-    supabase
-      .from("draft_pick_scores")
-      .select(
-        "pick_id, team_id, side, wins, games_played, win_total_line, resolved, correct, points",
-      )
-      .eq("user_id", user.id),
-    supabase.from("teams").select("id, name, conference, division"),
-    supabase
-      .from("division_predictions")
-      .select("division, predicted_team_id")
-      .eq("user_id", user.id),
-    supabase
-      .from("tiebreaker_predictions")
-      .select("points_guess")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-  ]);
+  const isDemo = profile.is_demo;
 
-  const teamById = new Map((teams ?? []).map((t) => [t.id, t]));
-  const existingDivisionPicks = new Map<Division, number>(
-    (divisionPredictions ?? []).map((p) => [p.division as Division, p.predicted_team_id]),
-  );
+  type PickScore = {
+    pick_id: string;
+    team_id: number;
+    side: string;
+    wins: number;
+    games_played: number;
+    win_total_line: number | null;
+    resolved: boolean;
+    points: number;
+  };
+  type Team = { id: number; name: string; conference: string; division: string };
 
-  const totalPoints = (pickScores ?? []).reduce((sum, p) => sum + p.points, 0);
+  let pickScores: PickScore[];
+  let teams: Team[];
+  let existingDivisionPicks: Map<Division, number>;
+  let tiebreakerGuess: number | null;
+
+  if (isDemo) {
+    pickScores = demoDraftPickScores(DEMO_VIEWER_ID);
+    teams = DEMO_TEAMS;
+    existingDivisionPicks = new Map(
+      DEMO_DIVISION_PREDICTIONS.filter((p) => p.user_id === DEMO_VIEWER_ID).map((p) => [
+        p.division,
+        p.predicted_team_id,
+      ]),
+    );
+    tiebreakerGuess = DEMO_TIEBREAKER_PREDICTIONS[DEMO_VIEWER_ID] ?? null;
+  } else {
+    const supabase = await createClient();
+    const [
+      { data: fetchedPickScores },
+      { data: fetchedTeams },
+      { data: divisionPredictions },
+      { data: tiebreaker },
+    ] = await Promise.all([
+      supabase
+        .from("draft_pick_scores")
+        .select(
+          "pick_id, team_id, side, wins, games_played, win_total_line, resolved, correct, points",
+        )
+        .eq("user_id", profile.id),
+      supabase.from("teams").select("id, name, conference, division"),
+      supabase
+        .from("division_predictions")
+        .select("division, predicted_team_id")
+        .eq("user_id", profile.id),
+      supabase
+        .from("tiebreaker_predictions")
+        .select("points_guess")
+        .eq("user_id", profile.id)
+        .maybeSingle(),
+    ]);
+    pickScores = fetchedPickScores ?? [];
+    teams = fetchedTeams ?? [];
+    existingDivisionPicks = new Map(
+      (divisionPredictions ?? []).map((p) => [p.division as Division, p.predicted_team_id]),
+    );
+    tiebreakerGuess = tiebreaker?.points_guess ?? null;
+  }
+
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+  const totalPoints = pickScores.reduce((sum, p) => sum + p.points, 0);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 space-y-12 px-6 py-12">
@@ -73,7 +112,7 @@ export default async function MyPicksPage() {
               </tr>
             </thead>
             <tbody>
-              {(pickScores ?? []).map((pick) => {
+              {pickScores.map((pick) => {
                 const team = teamById.get(pick.team_id);
                 return (
                   <tr key={pick.pick_id} className="border-t border-border">
@@ -89,7 +128,7 @@ export default async function MyPicksPage() {
                   </tr>
                 );
               })}
-              {(!pickScores || pickScores.length === 0) && (
+              {pickScores.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-center text-ink-muted">
                     No picks yet — head to the draft.
@@ -107,7 +146,7 @@ export default async function MyPicksPage() {
         </h2>
         <p className="mt-1 text-sm text-ink-muted">
           1 point per correct pick.{" "}
-          {divisionPicksLocked() ? (
+          {isDemo ? null : divisionPicksLocked() ? (
             <span className="text-bad">Locked — the season has started.</span>
           ) : (
             <>
@@ -123,9 +162,9 @@ export default async function MyPicksPage() {
         </p>
         <div className="mt-4">
           <DivisionForm
-            teams={teams ?? []}
+            teams={teams}
             existing={existingDivisionPicks}
-            locked={divisionPicksLocked()}
+            locked={isDemo || divisionPicksLocked()}
           />
         </div>
       </div>
@@ -138,7 +177,14 @@ export default async function MyPicksPage() {
           Only used if the final standings are tied.
         </p>
         <div className="mt-4">
-          <TiebreakerForm existing={tiebreaker?.points_guess ?? null} />
+          {isDemo ? (
+            <p className="text-sm">
+              Your guess: <span className="font-semibold text-accent">{tiebreakerGuess}</span>{" "}
+              points
+            </p>
+          ) : (
+            <TiebreakerForm existing={tiebreakerGuess} />
+          )}
         </div>
       </div>
     </main>
