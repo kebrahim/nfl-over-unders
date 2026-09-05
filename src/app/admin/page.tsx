@@ -31,7 +31,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     supabase
       .from("teams")
-      .select("id, name, conference, division, win_total_line")
+      .select("id, name, code, conference, division, win_total_line")
       .order("name"),
     supabase.from("division_winners").select("division, team_id"),
     supabase
@@ -61,10 +61,14 @@ export default async function AdminPage() {
 
   const teamById = new Map((teams ?? []).map((t) => [t.id, t]));
 
-  const divisionPicksByUser = new Map<string, { division: string; teamName: string }[]>();
+  const divisionPicksByUser = new Map<
+    string,
+    { division: string; teamName: string; teamCode: string }[]
+  >();
   for (const p of divisionPredictions ?? []) {
     const list = divisionPicksByUser.get(p.user_id) ?? [];
-    list.push({ division: p.division, teamName: teamById.get(p.predicted_team_id)?.name ?? "?" });
+    const team = teamById.get(p.predicted_team_id);
+    list.push({ division: p.division, teamName: team?.name ?? "?", teamCode: team?.code ?? "" });
     divisionPicksByUser.set(p.user_id, list);
   }
 
@@ -72,13 +76,15 @@ export default async function AdminPage() {
 
   const draftPicksByUser = new Map<
     string,
-    { pickNumber: number; teamName: string; side: string }[]
+    { pickNumber: number; teamName: string; teamCode: string; side: string }[]
   >();
   for (const dp of allDraftPicks ?? []) {
     const list = draftPicksByUser.get(dp.user_id) ?? [];
+    const team = teamById.get(dp.team_id);
     list.push({
       pickNumber: dp.pick_number,
-      teamName: teamById.get(dp.team_id)?.name ?? "?",
+      teamName: team?.name ?? "?",
+      teamCode: team?.code ?? "",
       side: dp.side,
     });
     draftPicksByUser.set(dp.user_id, list);

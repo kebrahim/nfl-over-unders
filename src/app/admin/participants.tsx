@@ -1,3 +1,5 @@
+import { TeamLogo } from "@/components/team-logo";
+
 interface Participant {
   id: string;
   display_name: string;
@@ -7,11 +9,13 @@ interface Participant {
 interface DivisionPick {
   division: string;
   teamName: string;
+  teamCode: string;
 }
 
 interface DraftPick {
   pickNumber: number;
   teamName: string;
+  teamCode: string;
   side: string;
 }
 
@@ -50,8 +54,12 @@ export function Participants({
                 {draftPicks.length > 0 ? (
                   <ul className="mt-1 space-y-0.5 text-sm">
                     {draftPicks.map((pick, i) => (
-                      <li key={i}>
-                        #{pick.pickNumber} {pick.teamName} <span className="capitalize">{pick.side}</span>
+                      <li key={i} className="flex items-center gap-1.5">
+                        {pick.teamCode && (
+                          <TeamLogo code={pick.teamCode} name={pick.teamName} size={16} />
+                        )}
+                        #{pick.pickNumber} {pick.teamName}{" "}
+                        <span className="capitalize">{pick.side}</span>
                       </li>
                     ))}
                   </ul>
@@ -67,7 +75,10 @@ export function Participants({
                 {divisionPicks.length > 0 ? (
                   <ul className="mt-1 space-y-0.5 text-sm">
                     {divisionPicks.map((pick) => (
-                      <li key={pick.division}>
+                      <li key={pick.division} className="flex items-center gap-1.5">
+                        {pick.teamCode && (
+                          <TeamLogo code={pick.teamCode} name={pick.teamName} size={16} />
+                        )}
                         {pick.division}: {pick.teamName}
                       </li>
                     ))}

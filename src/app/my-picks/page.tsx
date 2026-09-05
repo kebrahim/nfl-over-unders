@@ -9,6 +9,7 @@ import {
   DEMO_VIEWER_ID,
   demoDraftPickScores,
 } from "@/lib/demo/data";
+import { TeamLogo } from "@/components/team-logo";
 import { DivisionForm } from "./division-form";
 import { TiebreakerForm } from "./tiebreaker-form";
 
@@ -37,7 +38,7 @@ export default async function MyPicksPage() {
     resolved: boolean;
     points: number;
   };
-  type Team = { id: number; name: string; conference: string; division: string };
+  type Team = { id: number; name: string; code: string; conference: string; division: string };
 
   let pickScores: PickScore[];
   let teams: Team[];
@@ -68,7 +69,7 @@ export default async function MyPicksPage() {
           "pick_id, team_id, side, wins, games_played, win_total_line, resolved, correct, points",
         )
         .eq("user_id", profile.id),
-      supabase.from("teams").select("id, name, conference, division"),
+      supabase.from("teams").select("id, name, code, conference, division"),
       supabase
         .from("division_predictions")
         .select("division, predicted_team_id")
@@ -116,7 +117,12 @@ export default async function MyPicksPage() {
                 const team = teamById.get(pick.team_id);
                 return (
                   <tr key={pick.pick_id} className="border-t border-border">
-                    <td className="px-4 py-2 font-medium">{team?.name ?? pick.team_id}</td>
+                    <td className="px-4 py-2 font-medium">
+                      <div className="flex items-center gap-2">
+                        {team && <TeamLogo code={team.code} name={team.name} size={20} />}
+                        {team?.name ?? pick.team_id}
+                      </div>
+                    </td>
                     <td className="px-4 py-2 capitalize">{pick.side}</td>
                     <td className="px-4 py-2">{pick.win_total_line ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-muted">

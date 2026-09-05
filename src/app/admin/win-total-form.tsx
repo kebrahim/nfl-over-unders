@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { TeamLogo } from "@/components/team-logo";
 import { saveWinTotalLines, type AdminFormState } from "./actions";
 
 const initialState: AdminFormState = { error: null, success: false };
@@ -8,6 +9,7 @@ const initialState: AdminFormState = { error: null, success: false };
 interface Team {
   id: number;
   name: string;
+  code: string;
   win_total_line: number | null;
 }
 
@@ -19,7 +21,10 @@ export function WinTotalForm({ teams }: { teams: Team[] }) {
       <div className="grid gap-2 sm:grid-cols-2">
         {teams.map((team) => (
           <label key={team.id} className="flex items-center justify-between gap-3 text-sm">
-            {team.name}
+            <span className="flex items-center gap-2">
+              <TeamLogo code={team.code} name={team.name} size={20} />
+              {team.name}
+            </span>
             <input
               type="number"
               step={0.5}

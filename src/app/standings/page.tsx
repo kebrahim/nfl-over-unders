@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { DEMO_TEAMS, demoTeamRecords } from "@/lib/demo/data";
+import { TeamLogo } from "@/components/team-logo";
 import type { Conference, DivisionName } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,14 @@ const DIVISION_NAMES: DivisionName[] = ["East", "North", "South", "West"];
 export default async function StandingsPage() {
   const profile = await getCurrentProfile();
 
-  let teams: { id: number; name: string; conference: string; division: string; win_total_line: number | null }[];
+  let teams: {
+    id: number;
+    name: string;
+    code: string;
+    conference: string;
+    division: string;
+    win_total_line: number | null;
+  }[];
   let records: { team_id: number; wins: number; losses: number; ties: number; games_played: number }[];
 
   if (profile?.is_demo) {
@@ -80,7 +88,12 @@ export default async function StandingsPage() {
 
                         return (
                           <tr key={team.id} className="border-t border-border first:border-t-0">
-                            <td className="px-3 py-1.5 font-medium">{team.name}</td>
+                            <td className="px-3 py-1.5 font-medium">
+                              <div className="flex items-center gap-2">
+                                <TeamLogo code={team.code} name={team.name} size={20} />
+                                {team.name}
+                              </div>
+                            </td>
                             <td className="px-3 py-1.5 text-ink-muted">
                               {wins}-{losses}
                               {ties ? `-${ties}` : ""}

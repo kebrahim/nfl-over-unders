@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { playerIndexForPick, userIdOnTheClock } from "@/lib/domain/draft";
+import { TeamLogo } from "@/components/team-logo";
 import type { Side } from "@/lib/supabase/types";
 
 interface Team {
@@ -169,10 +170,15 @@ export function DraftBoard({
           const underTaken = takenKeys.has(`${team.id}:under`);
           return (
             <div key={team.id} className="rounded-lg border border-border bg-surface p-3">
-              <p className="text-sm font-medium">{team.name}</p>
-              <p className="text-xs text-ink-muted">
-                {team.conference} {team.division}
-              </p>
+              <div className="flex items-center gap-2">
+                <TeamLogo code={team.code} name={team.name} size={28} />
+                <div>
+                  <p className="text-sm font-medium">{team.name}</p>
+                  <p className="text-xs text-ink-muted">
+                    {team.conference} {team.division}
+                  </p>
+                </div>
+              </div>
               <div className="mt-2 flex gap-2">
                 <PickButton
                   label="Over"
@@ -204,7 +210,8 @@ export function DraftBoard({
           {[...initialPicks].reverse().map((pick) => {
             const team = teams.find((t) => t.id === pick.team_id);
             return (
-              <li key={pick.id} className="text-ink-muted">
+              <li key={pick.id} className="flex items-center gap-1.5 text-ink-muted">
+                {team && <TeamLogo code={team.code} name={team.name} size={16} />}
                 #{pick.pick_number} — {playerById.get(pick.user_id)?.display_name} took{" "}
                 <span className="text-ink">
                   {team?.name} {pick.side}
