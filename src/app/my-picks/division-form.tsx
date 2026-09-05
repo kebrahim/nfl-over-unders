@@ -17,9 +17,11 @@ interface Team {
 export function DivisionForm({
   teams,
   existing,
+  locked,
 }: {
   teams: Team[];
   existing: Map<Division, number>;
+  locked: boolean;
 }) {
   const [state, action, pending] = useActionState(saveDivisionPredictions, initialState);
 
@@ -39,7 +41,8 @@ export function DivisionForm({
               <select
                 name={`division:${division}`}
                 defaultValue={existing.get(division) ?? ""}
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                disabled={locked}
+                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none disabled:opacity-60"
               >
                 <option value="">— pick a team —</option>
                 {options.map((team) => (
@@ -58,10 +61,10 @@ export function DivisionForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || locked}
         className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
-        {pending ? "Saving…" : "Save division picks"}
+        {locked ? "Locked" : pending ? "Saving…" : "Save division picks"}
       </button>
     </form>
   );

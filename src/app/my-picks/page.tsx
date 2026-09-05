@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Division } from "@/lib/supabase/types";
+import { divisionPicksLocked, DIVISION_PICKS_LOCK_AT } from "@/lib/domain/season";
 import { DivisionForm } from "./division-form";
 import { TiebreakerForm } from "./tiebreaker-form";
 
@@ -105,10 +106,27 @@ export default async function MyPicksPage() {
           Division winners
         </h2>
         <p className="mt-1 text-sm text-ink-muted">
-          1 point per correct pick. Lock these in before Week 1.
+          1 point per correct pick.{" "}
+          {divisionPicksLocked() ? (
+            <span className="text-bad">Locked — the season has started.</span>
+          ) : (
+            <>
+              Locks at kickoff:{" "}
+              {new Date(DIVISION_PICKS_LOCK_AT).toLocaleString("en-US", {
+                timeZone: "America/New_York",
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}{" "}
+              ET.
+            </>
+          )}
         </p>
         <div className="mt-4">
-          <DivisionForm teams={teams ?? []} existing={existingDivisionPicks} />
+          <DivisionForm
+            teams={teams ?? []}
+            existing={existingDivisionPicks}
+            locked={divisionPicksLocked()}
+          />
         </div>
       </div>
 

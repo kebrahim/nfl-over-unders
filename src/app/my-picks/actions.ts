@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { DIVISIONS } from "@/lib/domain/divisions";
+import { divisionPicksLocked } from "@/lib/domain/season";
 import type { Division } from "@/lib/supabase/types";
 
 export interface PredictionFormState {
@@ -19,6 +20,9 @@ export async function saveDivisionPredictions(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be signed in.", success: false };
+  if (divisionPicksLocked()) {
+    return { error: "Division picks are locked — the season has started.", success: false };
+  }
 
   const rows = DIVISIONS.map((division) => {
     const teamId = formData.get(`division:${division}`);
