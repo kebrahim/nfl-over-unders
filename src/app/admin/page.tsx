@@ -7,6 +7,7 @@ import { Participants } from "./participants";
 import { StartDraftButton } from "../draft/start-draft-button";
 import { DraftControls } from "./draft-controls";
 import { SyncScoresButton } from "./sync-scores-button";
+import { TeamLogo } from "@/components/team-logo";
 
 export const dynamic = "force-dynamic";
 
@@ -143,11 +144,16 @@ export default async function AdminPage() {
         )}
         {recentPicks && recentPicks.length > 0 && (
           <ol className="mt-4 space-y-1 text-sm text-ink-muted">
-            {recentPicks.map((p) => (
-              <li key={p.id}>
-                #{p.pick_number} — team {p.team_id} {p.side}
-              </li>
-            ))}
+            {recentPicks.map((p) => {
+              const team = teamById.get(p.team_id);
+              return (
+                <li key={p.id} className="flex items-center gap-1.5">
+                  {team && <TeamLogo code={team.code} name={team.name} size={16} />}
+                  #{p.pick_number} — {team?.name ?? p.team_id}{" "}
+                  <span className="capitalize">{p.side}</span>
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>

@@ -62,6 +62,11 @@ export default async function StandingsPage() {
                   return (rb?.wins ?? 0) - (ra?.wins ?? 0);
                 });
 
+              const topWins = recordByTeam.get(divisionTeams[0]?.id ?? -1)?.wins ?? 0;
+              const leaderCount = divisionTeams.filter(
+                (t) => topWins > 0 && (recordByTeam.get(t.id)?.wins ?? 0) === topWins,
+              ).length;
+
               return (
                 <div
                   key={division}
@@ -93,6 +98,7 @@ export default async function StandingsPage() {
                                 ? "under"
                                 : "push"
                             : null;
+                        const isLeader = topWins > 0 && wins === topWins;
 
                         return (
                           <tr key={team.id} className="border-t border-border first:border-t-0">
@@ -100,6 +106,14 @@ export default async function StandingsPage() {
                               <div className="flex items-center gap-2">
                                 <TeamLogo code={team.code} name={team.name} size={20} />
                                 {team.name}
+                                {isLeader && (
+                                  <span
+                                    title={leaderCount > 1 ? "Tied for the division lead" : "Division leader"}
+                                    className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent"
+                                  >
+                                    {leaderCount > 1 ? "T-1st" : "1st"}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="px-3 py-1.5 text-ink-muted">
