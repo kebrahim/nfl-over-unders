@@ -37,3 +37,13 @@ export function scorePick(
   const bonusPoints = Math.min(marginWins * BONUS_PER_WIN_MARGIN, MAX_BONUS_POINTS);
   return { resolved: true, correct: true, marginWins, bonusPoints, points: 1 + bonusPoints };
 }
+
+/**
+ * Projects a team's final win total from its current pace, for display
+ * only (e.g. the standings page's "on pace" indicator) — never used for
+ * actual scoring, which always waits for the real final record.
+ */
+export function projectedWins(wins: number, gamesPlayed: number): number | null {
+  if (gamesPlayed <= 0) return null;
+  return (wins / gamesPlayed) * REGULAR_SEASON_GAMES_PER_TEAM;
+}

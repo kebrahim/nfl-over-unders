@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { DEMO_TEAMS, demoTeamRecords } from "@/lib/demo/data";
+import { projectedWins } from "@/lib/domain/scoring";
 import { TeamLogo } from "@/components/team-logo";
 import type { Conference, DivisionName } from "@/lib/supabase/types";
 
@@ -77,11 +78,12 @@ export default async function StandingsPage() {
                         const losses = record?.losses ?? 0;
                         const ties = record?.ties ?? 0;
                         const line = team.win_total_line;
+                        const projected = projectedWins(wins, record?.games_played ?? 0);
                         const onPace =
-                          line != null
-                            ? wins > line
+                          line != null && projected != null
+                            ? projected > line
                               ? "over"
-                              : wins < line
+                              : projected < line
                                 ? "under"
                                 : "push"
                             : null;
@@ -102,7 +104,7 @@ export default async function StandingsPage() {
                               {line != null ? `Line ${line}` : "No line set"}
                             </td>
                             <td className="px-3 py-1.5 text-right">
-                              {onPace && (
+                              {onPace && projected != null ? (
                                 <span
                                   className={
                                     onPace === "over"
@@ -112,8 +114,12 @@ export default async function StandingsPage() {
                                         : "text-ink-muted"
                                   }
                                 >
-                                  {onPace === "push" ? "on the line" : `on pace: ${onPace}`}
+                                  {onPace === "push"
+                                    ? "on the line"
+                                    : `on pace: ${projected.toFixed(1)} (${onPace})`}
                                 </span>
+                              ) : (
+                                line != null && <span className="text-ink-muted">—</span>
                               )}
                             </td>
                           </tr>
