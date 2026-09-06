@@ -2,8 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import type { Division } from "@/lib/supabase/types";
 import { divisionPicksLocked, DIVISION_PICKS_LOCK_AT } from "@/lib/domain/season";
+import { DIVISIONS } from "@/lib/domain/divisions";
 import {
   DEMO_DIVISION_PREDICTIONS,
+  DEMO_PLAYERS,
   DEMO_TEAMS,
   DEMO_TIEBREAKER_PREDICTIONS,
   DEMO_VIEWER_ID,
@@ -44,6 +46,8 @@ export default async function MyPicksPage() {
   let teams: Team[];
   let existingDivisionPicks: Map<Division, number>;
   let tiebreakerGuess: number | null;
+  let players: { id: string; display_name: string }[];
+  let allDivisionPicks: { user_id: string; division: Division; predicted_team_id: number }[];
 
   if (isDemo) {
     pickScores = demoDraftPickScores(DEMO_VIEWER_ID);
@@ -55,6 +59,8 @@ export default async function MyPicksPage() {
       ]),
     );
     tiebreakerGuess = DEMO_TIEBREAKER_PREDICTIONS[DEMO_VIEWER_ID] ?? null;
+    players = DEMO_PLAYERS;
+    allDivisionPicks = DEMO_DIVISION_PREDICTIONS;
   } else {
     const supabase = await createClient();
     const [
@@ -62,6 +68,7 @@ export default async function MyPicksPage() {
       { data: fetchedTeams },
       { data: divisionPredictions },
       { data: tiebreaker },
+      { data: fetchedPlayers },
     ] = await Promise.all([
       supabase
         .from("draft_pick_scores")
@@ -70,26 +77,29 @@ export default async function MyPicksPage() {
         )
         .eq("user_id", profile.id),
       supabase.from("teams").select("id, name, code, conference, division"),
-      supabase
-        .from("division_predictions")
-        .select("division, predicted_team_id")
-        .eq("user_id", profile.id),
+      // RLS decides what's actually visible here: your own row always,
+      // everyone's once picks lock, or always if you're commissioner.
+      supabase.from("division_predictions").select("user_id, division, predicted_team_id"),
       supabase
         .from("tiebreaker_predictions")
         .select("points_guess")
         .eq("user_id", profile.id)
         .maybeSingle(),
+      supabase.from("profiles").select("id, display_name").eq("is_demo", false).order("display_name"),
     ]);
     pickScores = fetchedPickScores ?? [];
     teams = fetchedTeams ?? [];
+    allDivisionPicks = (divisionPredictions ?? []) as typeof allDivisionPicks;
     existingDivisionPicks = new Map(
-      (divisionPredictions ?? []).map((p) => [p.division as Division, p.predicted_team_id]),
+      allDivisionPicks.filter((p) => p.user_id === profile.id).map((p) => [p.division, p.predicted_team_id]),
     );
     tiebreakerGuess = tiebreaker?.points_guess ?? null;
+    players = fetchedPlayers ?? [];
   }
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const totalPoints = pickScores.reduce((sum, p) => sum + p.points, 0);
+  const picksAreVisible = isDemo || divisionPicksLocked() || profile.is_commissioner;
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 space-y-12 px-6 py-12">
@@ -173,6 +183,60 @@ export default async function MyPicksPage() {
             locked={isDemo || divisionPicksLocked()}
           />
         </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Everyone&apos;s Picks
+        </h2>
+        {picksAreVisible ? (
+          <>
+            <p className="mt-1 text-sm text-ink-muted">Who picked what for each division.</p>
+            <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-2 text-left">
+                  <tr>
+                    <th className="px-3 py-2 font-medium text-ink-muted">Division</th>
+                    {players.map((player) => (
+                      <th key={player.id} className="px-3 py-2 font-medium text-ink-muted">
+                        {player.display_name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {DIVISIONS.map((division) => (
+                    <tr key={division} className="border-t border-border">
+                      <td className="px-3 py-1.5 font-medium">{division}</td>
+                      {players.map((player) => {
+                        const pick = allDivisionPicks.find(
+                          (p) => p.user_id === player.id && p.division === division,
+                        );
+                        const team = pick ? teamById.get(pick.predicted_team_id) : null;
+                        return (
+                          <td key={player.id} className="px-3 py-1.5">
+                            {team ? (
+                              <div className="flex items-center gap-1.5">
+                                <TeamLogo code={team.code} name={team.name} size={16} />
+                                {team.name}
+                              </div>
+                            ) : (
+                              <span className="text-ink-muted">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-ink-muted">
+            Everyone&apos;s picks will be visible here once they lock at kickoff.
+          </p>
+        )}
       </div>
 
       <div>
