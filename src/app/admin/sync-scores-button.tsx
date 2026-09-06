@@ -7,12 +7,14 @@ export function SyncScoresButton() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function sync() {
     setPending(true);
     setError(null);
     setResult(null);
+    setDiagnostics(null);
     const res = await fetch("/api/sync/games", { method: "POST" });
     const body = await res.json();
     setPending(false);
@@ -21,6 +23,9 @@ export function SyncScoresButton() {
       return;
     }
     setResult(`Synced ${body.synced} game${body.synced === 1 ? "" : "s"}.`);
+    if (body.synced === 0) {
+      setDiagnostics(body);
+    }
     router.refresh();
   }
 
@@ -35,6 +40,11 @@ export function SyncScoresButton() {
         {pending ? "Syncing…" : "Sync scores now"}
       </button>
       {result && <p className="text-sm text-good">{result}</p>}
+      {diagnostics != null && (
+        <pre className="overflow-x-auto rounded-md border border-border bg-bg p-3 text-xs text-ink-muted">
+          {JSON.stringify(diagnostics, null, 2)}
+        </pre>
+      )}
       {error && <p className="text-sm text-bad">{error}</p>}
     </div>
   );

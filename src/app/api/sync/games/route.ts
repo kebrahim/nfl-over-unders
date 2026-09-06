@@ -66,22 +66,41 @@ async function performSync() {
 
   const events = await fetchEspnGames();
 
+  const skipped = { badWeek: 0, noCompetitors: 0, unknownTeam: 0 };
+  const sampleEvent = events[0]
+    ? {
+        id: events[0].id,
+        week: events[0].competitions?.[0]?.week,
+        statusName: events[0].status?.type?.name,
+        competitorAbbreviations: (events[0].competitions?.[0]?.competitors ?? []).map(
+          (c) => `${c.homeAway}:${c.team?.abbreviation}`,
+        ),
+      }
+    : null;
+
   const games = [];
   for (const event of events) {
     const competition = event.competitions?.[0];
     const week = competition?.week?.number;
     if (!competition || !Number.isInteger(week) || week! < MIN_WEEK || week! > MAX_WEEK) {
+      skipped.badWeek++;
       continue;
     }
 
     const competitors = competition.competitors ?? [];
     const home = competitors.find((c) => c.homeAway === "home");
     const away = competitors.find((c) => c.homeAway === "away");
-    if (!home || !away) continue;
+    if (!home || !away) {
+      skipped.noCompetitors++;
+      continue;
+    }
 
     const homeTeamId = teamIdByCode.get(fromEspnCode(home.team.abbreviation));
     const awayTeamId = teamIdByCode.get(fromEspnCode(away.team.abbreviation));
-    if (!homeTeamId || !awayTeamId) continue;
+    if (!homeTeamId || !awayTeamId) {
+      skipped.unknownTeam++;
+      continue;
+    }
 
     const status = mapStatus(event.status?.type?.name);
     const toScore = (raw: string | undefined) =>
@@ -100,13 +119,13 @@ async function performSync() {
   }
 
   if (games.length === 0) {
-    return { synced: 0 };
+    return { synced: 0, rawEvents: events.length, skipped, sampleEvent };
   }
 
   const { error } = await db.from("games").upsert(games, { onConflict: "id" });
   if (error) throw new Error(error.message);
 
-  return { synced: games.length };
+  return { synced: games.length, rawEvents: events.length };
 }
 
 async function requireAuthorized(request: Request): Promise<NextResponse | null> {
