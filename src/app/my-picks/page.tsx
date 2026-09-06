@@ -101,6 +101,11 @@ export default async function MyPicksPage() {
   const totalPoints = pickScores.reduce((sum, p) => sum + p.points, 0);
   const picksAreVisible = isDemo || divisionPicksLocked() || profile.is_commissioner;
 
+  const missingDivisionCount = DIVISIONS.length - existingDivisionPicks.size;
+  const divisionPicksComplete = missingDivisionCount === 0;
+  const tiebreakerComplete = tiebreakerGuess != null;
+  const somethingMissing = !isDemo && (!divisionPicksComplete || !tiebreakerComplete);
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 space-y-12 px-6 py-12">
       <div>
@@ -110,6 +115,22 @@ export default async function MyPicksPage() {
         <p className="mt-1 text-sm text-ink-muted">
           {totalPoints} draft point{totalPoints === 1 ? "" : "s"} so far.
         </p>
+
+        {somethingMissing && (
+          <div className="mt-4 rounded-lg border-2 border-bad bg-bad/10 px-4 py-3">
+            <p className="font-heading font-semibold tracking-wide text-bad uppercase">
+              Action needed
+            </p>
+            <ul className="mt-1 list-inside list-disc text-sm text-bad">
+              {!divisionPicksComplete && (
+                <li>
+                  {missingDivisionCount} of {DIVISIONS.length} division picks still missing
+                </li>
+              )}
+              {!tiebreakerComplete && <li>Tiebreaker guess not submitted</li>}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-6 overflow-hidden rounded-lg border border-border bg-surface">
           <table className="w-full text-sm">
@@ -157,9 +178,20 @@ export default async function MyPicksPage() {
       </div>
 
       <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Division winners
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+            Division winners
+          </h2>
+          {isDemo ? null : divisionPicksComplete ? (
+            <span className="rounded-full bg-good/15 px-2 py-0.5 text-xs font-semibold text-good">
+              Complete
+            </span>
+          ) : (
+            <span className="rounded-full bg-bad/15 px-2 py-0.5 text-xs font-semibold text-bad">
+              {missingDivisionCount} missing
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-ink-muted">
           1 point per correct pick.{" "}
           {isDemo ? null : divisionPicksLocked() ? (
@@ -240,9 +272,20 @@ export default async function MyPicksPage() {
       </div>
 
       <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Tiebreaker
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+            Tiebreaker
+          </h2>
+          {isDemo ? null : tiebreakerComplete ? (
+            <span className="rounded-full bg-good/15 px-2 py-0.5 text-xs font-semibold text-good">
+              Complete
+            </span>
+          ) : (
+            <span className="rounded-full bg-bad/15 px-2 py-0.5 text-xs font-semibold text-bad">
+              Not submitted
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-ink-muted">
           Only used if the final standings are tied.
         </p>
