@@ -52,6 +52,11 @@ export function DraftBoard({
   const [conferenceFilter, setConferenceFilter] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSelection, setConfirmSelection] = useState<{
+    teamId: number;
+    teamName: string;
+    side: Side;
+  } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -106,6 +111,13 @@ export function DraftBoard({
       return;
     }
     router.refresh();
+  }
+
+  async function confirmPick() {
+    if (!confirmSelection) return;
+    const { teamId, side } = confirmSelection;
+    setConfirmSelection(null);
+    await makePick(teamId, side);
   }
 
   return (
@@ -186,7 +198,9 @@ export function DraftBoard({
                   taken={overTaken}
                   disabled={!isMyTurn}
                   pending={pendingKey === `${team.id}:over`}
-                  onClick={() => makePick(team.id, "over")}
+                  onClick={() =>
+                    setConfirmSelection({ teamId: team.id, teamName: team.name, side: "over" })
+                  }
                 />
                 <PickButton
                   label="Under"
@@ -194,7 +208,9 @@ export function DraftBoard({
                   taken={underTaken}
                   disabled={!isMyTurn}
                   pending={pendingKey === `${team.id}:under`}
-                  onClick={() => makePick(team.id, "under")}
+                  onClick={() =>
+                    setConfirmSelection({ teamId: team.id, teamName: team.name, side: "under" })
+                  }
                 />
               </div>
             </div>
@@ -222,6 +238,35 @@ export function DraftBoard({
           {initialPicks.length === 0 && <li className="text-ink-muted">No picks yet.</li>}
         </ol>
       </div>
+
+      {confirmSelection && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 px-6">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-5">
+            <p className="text-sm text-ink-muted">Confirm your pick</p>
+            <p className="mt-1 text-lg font-semibold">
+              {confirmSelection.teamName}{" "}
+              <span className="capitalize text-accent">{confirmSelection.side}</span>
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">This can&apos;t be undone by you once submitted.</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmSelection(null)}
+                className="flex-1 rounded-full border border-border px-4 py-2 text-sm font-medium text-ink hover:bg-surface-2"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPick}
+                className="flex-1 rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent-hover"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

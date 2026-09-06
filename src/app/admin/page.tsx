@@ -5,6 +5,7 @@ import { WinTotalForm } from "./win-total-form";
 import { DivisionWinnersForm } from "./division-winners-form";
 import { Participants } from "./participants";
 import { StartDraftButton } from "../draft/start-draft-button";
+import { DraftControls } from "./draft-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -124,6 +125,11 @@ export default async function AdminPage() {
             <StartDraftButton />
           </div>
         ) : null}
+        {session && (
+          <div className="mt-3">
+            <DraftControls hasPicks={!!recentPicks && recentPicks.length > 0} />
+          </div>
+        )}
         {recentPicks && recentPicks.length > 0 && (
           <ol className="mt-4 space-y-1 text-sm text-ink-muted">
             {recentPicks.map((p) => (
