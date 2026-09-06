@@ -72,8 +72,9 @@ supabase/
 ### Data model
 
 - `teams` — the 32 NFL teams, each with a `win_total_line`
-- `games` — synced weekly; team records and the league-wide point total are
-  both derived from this rather than stored separately
+- `games` — synced daily from ESPN's public scoreboard (or on demand from
+  `/admin`); team records and the league-wide point total are both derived
+  from this rather than stored separately
 - `draft_sessions` / `draft_picks` — the single 6-round snake draft; a pick
   is `(team, side)`, not just a team
 - `division_predictions` / `division_winners` — each player's division

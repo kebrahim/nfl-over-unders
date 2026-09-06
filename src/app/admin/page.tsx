@@ -6,6 +6,7 @@ import { DivisionWinnersForm } from "./division-winners-form";
 import { Participants } from "./participants";
 import { StartDraftButton } from "../draft/start-draft-button";
 import { DraftControls } from "./draft-controls";
+import { SyncScoresButton } from "./sync-scores-button";
 
 export const dynamic = "force-dynamic";
 
@@ -114,6 +115,16 @@ export default async function AdminPage() {
             tiebreakerByUser={tiebreakerByUser}
             draftPicksByUser={draftPicksByUser}
           />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">Scores</h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          Syncs automatically once a day. Use this to pull the latest scores right now.
+        </p>
+        <div className="mt-3">
+          <SyncScoresButton />
         </div>
       </div>
 
