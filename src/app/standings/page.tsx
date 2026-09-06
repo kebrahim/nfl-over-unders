@@ -70,7 +70,13 @@ export default async function StandingsPage() {
                   <h3 className="border-b border-border bg-surface-2 px-3 py-1.5 text-xs font-medium tracking-wide text-ink-muted uppercase">
                     {conference} {division}
                   </h3>
-                  <table className="w-full text-sm">
+                  <table className="w-full table-fixed text-sm">
+                    <colgroup>
+                      <col className="w-[42%]" />
+                      <col className="w-[16%]" />
+                      <col className="w-[18%]" />
+                      <col className="w-[24%]" />
+                    </colgroup>
                     <tbody>
                       {divisionTeams.map((team) => {
                         const record = recordByTeam.get(team.id);
