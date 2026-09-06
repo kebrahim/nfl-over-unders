@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { fromEspnCode } from "@/lib/domain/espn";
+import { computeNflWeek } from "@/lib/domain/season";
 
 // Pulls current scores from ESPN's public (unofficial, undocumented but
 // widely relied on) scoreboard endpoint and upserts them into `games`.
@@ -25,7 +26,6 @@ interface EspnEvent {
   date: string;
   status?: { type?: { name?: string } };
   competitions?: {
-    week?: { number?: number };
     competitors?: EspnCompetitor[];
   }[];
 }
@@ -47,7 +47,11 @@ async function fetchEspnGames() {
   // (games run Thu-Mon), so scheduled matchups are visible for testing
   // even before the season starts, not just live/recent scores.
   const end = new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000);
-  const url = `${ESPN_SCOREBOARD_URL}?seasontype=2&dates=${formatDate(start)}-${formatDate(end)}`;
+  // Not filtering by seasontype here — it isn't honored when combined
+  // with a `dates` range (confirmed: it still returned a completed
+  // preseason game). Preseason/postseason games are excluded below by
+  // computing each game's week from its own kickoff date instead.
+  const url = `${ESPN_SCOREBOARD_URL}?dates=${formatDate(start)}-${formatDate(end)}`;
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
@@ -70,7 +74,8 @@ async function performSync() {
   const sampleEvent = events[0]
     ? {
         id: events[0].id,
-        week: events[0].competitions?.[0]?.week,
+        date: events[0].date,
+        computedWeek: computeNflWeek(events[0].date),
         statusName: events[0].status?.type?.name,
         competitorAbbreviations: (events[0].competitions?.[0]?.competitors ?? []).map(
           (c) => `${c.homeAway}:${c.team?.abbreviation}`,
@@ -81,8 +86,8 @@ async function performSync() {
   const games = [];
   for (const event of events) {
     const competition = event.competitions?.[0];
-    const week = competition?.week?.number;
-    if (!competition || !Number.isInteger(week) || week! < MIN_WEEK || week! > MAX_WEEK) {
+    const week = computeNflWeek(event.date);
+    if (!competition || week < MIN_WEEK || week > MAX_WEEK) {
       skipped.badWeek++;
       continue;
     }
@@ -108,7 +113,7 @@ async function performSync() {
 
     games.push({
       id: Number(event.id),
-      week: week!,
+      week,
       home_team_id: homeTeamId,
       away_team_id: awayTeamId,
       home_score: toScore(home.score),
