@@ -43,7 +43,10 @@ function mapStatus(espnStatusName: string | undefined): "scheduled" | "live" | "
 async function fetchEspnGames() {
   const now = new Date();
   const start = new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000);
-  const end = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+  // Wide enough to always include at least one full upcoming NFL week
+  // (games run Thu-Mon), so scheduled matchups are visible for testing
+  // even before the season starts, not just live/recent scores.
+  const end = new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000);
   const url = `${ESPN_SCOREBOARD_URL}?seasontype=2&dates=${formatDate(start)}-${formatDate(end)}`;
 
   const res = await fetch(url, { cache: "no-store" });
