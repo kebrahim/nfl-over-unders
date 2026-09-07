@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { isDraftComplete, roundForPick, userIdOnTheClock } from "@/lib/domain/draft";
+import { sendGroupText } from "@/lib/notify/sms";
 import type { Side } from "@/lib/supabase/types";
 
 export async function POST(request: Request) {
@@ -93,6 +94,26 @@ export async function POST(request: Request) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  const [{ data: team }, { data: picker }] = await Promise.all([
+    db.from("teams").select("name, win_total_line").eq("id", teamId).single(),
+    db.from("profiles").select("display_name").eq("id", onTheClock).single(),
+  ]);
+  const teamLabel = team
+    ? `${team.name} ${side}${team.win_total_line != null ? ` ${team.win_total_line}` : ""}`
+    : `team ${teamId} ${side}`;
+
+  if (complete) {
+    await sendGroupText(`${picker?.display_name ?? "Someone"} took ${teamLabel}. Draft complete! 🏆`);
+  } else {
+    const nextOnTheClock = userIdOnTheClock(session.snake_order, nextPickIndex);
+    const { data: nextPicker } = nextOnTheClock
+      ? await db.from("profiles").select("display_name").eq("id", nextOnTheClock).single()
+      : { data: null };
+    await sendGroupText(
+      `${picker?.display_name ?? "Someone"} took ${teamLabel}. On the clock: ${nextPicker?.display_name ?? "?"}.`,
+    );
   }
 
   return NextResponse.json({ pick });

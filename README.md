@@ -41,7 +41,7 @@ The tiebreaker only applies if two or more players are tied at the top.
 - **Framework**: [Next.js](https://nextjs.org) (App Router, TypeScript)
 - **Database + Auth**: [Supabase](https://supabase.com) (Postgres, Auth, Realtime)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com)
-- **Email**: [Resend](https://resend.com) (draft turn notifications)
+- **SMS**: [Twilio Conversations](https://www.twilio.com/docs/conversations) (group MMS thread for draft-turn and pick notifications)
 - **Hosting**: [Vercel](https://vercel.com), with a cron job for score syncing
 
 ## Project structure
@@ -60,9 +60,11 @@ src/
       draft/start/         Commissioner: start the draft
       draft/pick/          Make a draft pick
       sync/games/          Pull latest scores, recompute derived data
+      admin/sms/setup/     Commissioner: create the group MMS thread
   lib/
     supabase/              Browser/server Supabase clients
     domain/                Snake draft order, scoring math, shared types
+    notify/                Twilio group-text sending
 supabase/
   migrations/              SQL schema (tables, views, RLS policies)
   seed.sql                 32 NFL teams (name, code, conference, division)
@@ -79,10 +81,23 @@ supabase/
 - `division_predictions` / `division_winners` — each player's division
   picks, and the commissioner-recorded actual winners
 - `tiebreaker_predictions` — each player's total-points guess
+- `profiles.phone` — each player's own phone number, for the group text
+- `app_settings` — small key/value table; currently just the Twilio
+  Conversation SID for the group MMS thread, set once from `/admin`
 
 See `supabase/migrations/` for the full schema and derived views
 (`team_records`, `league_total_points`, `draft_pick_scores`,
 `overall_leaderboard`).
+
+## Notifications
+
+The commissioner can set up a shared group MMS thread (via Twilio
+Conversations) from `/admin`, once every player has added their phone
+number on My Picks. Once it's set up, the app posts into that thread
+automatically — when the draft starts, after every pick, and when the
+draft finishes — so nobody has to keep the site open to follow along.
+It's a real group text (everyone sees the same thread and each other's
+replies), not five separate one-way messages; see `src/lib/notify/sms.ts`.
 
 ## Getting started
 

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
+import { getSmsConversationSid } from "@/lib/notify/sms";
 import type { Division } from "@/lib/supabase/types";
 import { WinTotalForm } from "./win-total-form";
 import { DivisionWinnersForm } from "./division-winners-form";
@@ -7,6 +8,7 @@ import { Participants } from "./participants";
 import { StartDraftButton } from "../draft/start-draft-button";
 import { DraftControls } from "./draft-controls";
 import { SyncScoresButton } from "./sync-scores-button";
+import { SmsSetup } from "./sms-setup";
 import { TeamLogo } from "@/components/team-logo";
 
 export const dynamic = "force-dynamic";
@@ -50,13 +52,18 @@ export default async function AdminPage() {
       .limit(10),
     supabase
       .from("profiles")
-      .select("id, display_name, email")
+      .select("id, display_name, email, phone")
       .eq("is_demo", false)
       .order("display_name"),
     supabase.from("division_predictions").select("user_id, division, predicted_team_id"),
     supabase.from("tiebreaker_predictions").select("user_id, points_guess"),
     supabase.from("draft_picks").select("user_id, team_id, side, pick_number"),
   ]);
+
+  const smsConversationSid = await getSmsConversationSid();
+  const missingPhoneNames = (participants ?? [])
+    .filter((p) => !p.phone)
+    .map((p) => p.display_name);
 
   const existingWinners = new Map<Division, number>(
     (divisionWinners ?? []).map((w) => [w.division as Division, w.team_id]),
@@ -126,6 +133,19 @@ export default async function AdminPage() {
         </p>
         <div className="mt-3">
           <SyncScoresButton />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Group text
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          Sends draft updates to everyone as a group MMS thread. Set up once — after that,
+          picks and turn changes post automatically.
+        </p>
+        <div className="mt-3">
+          <SmsSetup configured={!!smsConversationSid} missingPhoneNames={missingPhoneNames} />
         </div>
       </div>
 

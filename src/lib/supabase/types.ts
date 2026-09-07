@@ -26,6 +26,7 @@ export interface Database {
           id: string;
           display_name: string;
           email: string;
+          phone: string | null;
           is_commissioner: boolean;
           is_demo: boolean;
           created_at: string;
@@ -155,6 +156,17 @@ export interface Database {
           points_guess: number;
         };
         Update: Partial<Database["public"]["Tables"]["tiebreaker_predictions"]["Row"]>;
+        Relationships: [];
+      };
+      app_settings: {
+        Row: {
+          key: string;
+          value: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["app_settings"]["Row"]> & {
+          key: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["app_settings"]["Row"]>;
         Relationships: [];
       };
     };

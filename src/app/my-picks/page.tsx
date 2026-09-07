@@ -14,6 +14,7 @@ import {
 import { TeamLogo } from "@/components/team-logo";
 import { DivisionForm } from "./division-form";
 import { TiebreakerForm } from "./tiebreaker-form";
+import { PhoneForm } from "./phone-form";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +116,21 @@ export default async function MyPicksPage() {
         <p className="mt-1 text-sm text-ink-muted">
           {totalPoints} draft point{totalPoints === 1 ? "" : "s"} so far.
         </p>
+
+        {!isDemo && (
+          <div className="mt-6">
+            <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+              Phone number
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Used only for the group text with draft updates — the commissioner sets that up
+              from Admin once everyone&apos;s added theirs.
+            </p>
+            <div className="mt-3">
+              <PhoneForm existing={profile.phone} />
+            </div>
+          </div>
+        )}
 
         {somethingMissing && (
           <div className="mt-4 rounded-lg border-2 border-bad bg-bad/10 px-4 py-3">

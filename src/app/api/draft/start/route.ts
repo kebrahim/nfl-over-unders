@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { shuffledOrder, TOTAL_ROUNDS } from "@/lib/domain/draft";
+import { sendGroupText } from "@/lib/notify/sms";
 
 export async function POST() {
   const supabase = await createClient();
@@ -31,7 +32,7 @@ export async function POST() {
 
   const { data: players, error: playersError } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, display_name")
     .eq("is_demo", false);
   if (playersError) {
     return NextResponse.json({ error: playersError.message }, { status: 500 });
@@ -43,6 +44,7 @@ export async function POST() {
     );
   }
 
+  const nameById = new Map(players.map((p) => [p.id, p.display_name]));
   const snakeOrder = shuffledOrder(players.map((p) => p.id));
 
   const { data: session, error } = await supabase
@@ -60,6 +62,9 @@ export async function POST() {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const order = snakeOrder.map((id) => nameById.get(id) ?? "?").join(" → ");
+  await sendGroupText(`The draft has started! Order: ${order}. On the clock: ${nameById.get(snakeOrder[0])}.`);
 
   return NextResponse.json({ session });
 }

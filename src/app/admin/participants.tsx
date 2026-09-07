@@ -4,6 +4,7 @@ interface Participant {
   id: string;
   display_name: string;
   email: string;
+  phone: string | null;
 }
 
 interface DivisionPick {
@@ -44,7 +45,10 @@ export function Participants({
             <p className="font-heading font-semibold tracking-wide text-accent uppercase">
               {p.display_name}
             </p>
-            <p className="text-sm text-ink-muted">{p.email}</p>
+            <p className="text-sm text-ink-muted">
+              {p.email}
+              {p.phone ? ` · ${p.phone}` : " · no phone on file"}
+            </p>
 
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <div>
