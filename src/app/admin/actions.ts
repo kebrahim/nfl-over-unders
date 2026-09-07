@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { DIVISIONS } from "@/lib/domain/divisions";
 
 export interface AdminFormState {
   error: string | null;
@@ -49,5 +50,43 @@ export async function saveWinTotalLines(
 
   revalidatePath("/admin");
   revalidatePath("/standings");
+  return { error: null, success: true };
+}
+
+export async function saveDivisionWinners(
+  _prevState: AdminFormState,
+  formData: FormData,
+): Promise<AdminFormState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in.", success: false };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_commissioner")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.is_commissioner) return { error: "Commissioner only.", success: false };
+
+  for (const division of DIVISIONS) {
+    const raw = formData.get(`division:${division}`);
+    const teamId = raw ? Number(raw) : null;
+
+    if (teamId) {
+      const { error } = await supabase
+        .from("division_winners")
+        .upsert({ division, team_id: teamId }, { onConflict: "division" });
+      if (error) return { error: error.message, success: false };
+    } else {
+      const { error } = await supabase.from("division_winners").delete().eq("division", division);
+      if (error) return { error: error.message, success: false };
+    }
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/leaderboard");
+  revalidatePath("/my-picks");
   return { error: null, success: true };
 }

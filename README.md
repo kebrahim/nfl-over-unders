@@ -60,7 +60,6 @@ src/
       draft/start/         Commissioner: start the draft
       draft/pick/          Make a draft pick
       sync/games/          Pull latest scores, recompute derived data
-      admin/division-winners/  Commissioner: record actual division winners
   lib/
     supabase/              Browser/server Supabase clients
     domain/                Snake draft order, scoring math, shared types
