@@ -38,6 +38,20 @@ export function SmsSetup({
     router.refresh();
   }
 
+  async function sendTest() {
+    setPending(true);
+    setError(null);
+    setResult(null);
+    const res = await fetch("/api/admin/sms/test", { method: "POST" });
+    const body = await res.json();
+    setPending(false);
+    if (!res.ok) {
+      setError(body.error ?? "Something went wrong.");
+      return;
+    }
+    setResult("Test text sent to your own number — check your phone.");
+  }
+
   return (
     <div className="space-y-2">
       {missingPhoneNames.length > 0 && (
@@ -46,7 +60,7 @@ export function SmsSetup({
           My Picks first.
         </p>
       )}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setUp(false)}
@@ -67,6 +81,14 @@ export function SmsSetup({
             Recreate
           </button>
         )}
+        <button
+          type="button"
+          onClick={sendTest}
+          disabled={pending}
+          className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+        >
+          Send me a test text
+        </button>
       </div>
       {result && <p className="text-sm text-good">{result}</p>}
       {error && <p className="text-sm text-bad">{error}</p>}
