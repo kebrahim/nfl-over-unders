@@ -85,6 +85,7 @@ export default async function DraftPage() {
         teams={teams ?? []}
         players={profiles ?? []}
         currentUserId={user?.id ?? null}
+        isCommissioner={!!profile?.is_commissioner}
       />
     </main>
   );

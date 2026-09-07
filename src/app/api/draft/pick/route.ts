@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_demo")
+    .select("is_demo, is_commissioner")
     .eq("id", user.id)
     .single();
   if (profile?.is_demo) {
@@ -45,7 +45,10 @@ export async function POST(request: Request) {
   }
 
   const onTheClock = userIdOnTheClock(session.snake_order, session.current_pick_index);
-  if (onTheClock !== user.id) {
+  if (!onTheClock) {
+    return NextResponse.json({ error: "This draft isn't accepting picks." }, { status: 409 });
+  }
+  if (onTheClock !== user.id && !profile?.is_commissioner) {
     return NextResponse.json({ error: "It's not your turn." }, { status: 403 });
   }
 
@@ -56,7 +59,7 @@ export async function POST(request: Request) {
     .from("draft_picks")
     .insert({
       session_id: sessionId,
-      user_id: user.id,
+      user_id: onTheClock,
       team_id: teamId,
       side,
       round,

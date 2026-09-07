@@ -42,12 +42,14 @@ export function DraftBoard({
   teams,
   players,
   currentUserId,
+  isCommissioner = false,
 }: {
   session: Session;
   initialPicks: Pick[];
   teams: Team[];
   players: Player[];
   currentUserId: string | null;
+  isCommissioner?: boolean;
 }) {
   const router = useRouter();
   const [conferenceFilter, setConferenceFilter] = useState<string | null>(null);
@@ -92,6 +94,8 @@ export function DraftBoard({
       ? playerIndexForPick(session.current_pick_index + 1, session.snake_order.length)
       : -1;
   const isMyTurn = session.status === "active" && onTheClock === currentUserId;
+  const canPick = session.status === "active" && onTheClock != null && (isMyTurn || isCommissioner);
+  const pickingForSomeoneElse = canPick && !isMyTurn && isCommissioner;
   const conferences = Array.from(new Set(teams.map((t) => t.conference)));
   const visibleTeams = conferenceFilter
     ? teams.filter((t) => t.conference === conferenceFilter)
@@ -136,6 +140,11 @@ export function DraftBoard({
               {onTheClock ? playerById.get(onTheClock)?.display_name ?? "…" : "—"}
             </span>
             {isMyTurn && <span className="ml-2 text-good">(you!)</span>}
+            {pickingForSomeoneElse && (
+              <span className="ml-2 text-xs text-ink-muted">
+                (you&apos;re the commissioner — you can make this pick for them)
+              </span>
+            )}
           </p>
         )}
         <div className="mt-2 flex flex-wrap gap-2 text-xs text-ink-muted">
@@ -200,7 +209,7 @@ export function DraftBoard({
                   label={line != null ? `Over ${line}` : "Over"}
                   variant="good"
                   taken={overTaken}
-                  disabled={!isMyTurn}
+                  disabled={!canPick}
                   pending={pendingKey === `${team.id}:over`}
                   onClick={() =>
                     setConfirmSelection({ teamId: team.id, teamName: team.name, side: "over", line })
@@ -210,7 +219,7 @@ export function DraftBoard({
                   label={line != null ? `Under ${line}` : "Under"}
                   variant="bad"
                   taken={underTaken}
-                  disabled={!isMyTurn}
+                  disabled={!canPick}
                   pending={pendingKey === `${team.id}:under`}
                   onClick={() =>
                     setConfirmSelection({ teamId: team.id, teamName: team.name, side: "under", line })
@@ -247,7 +256,11 @@ export function DraftBoard({
       {confirmSelection && (
         <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 px-6">
           <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-5">
-            <p className="text-sm text-ink-muted">Confirm your pick</p>
+            <p className="text-sm text-ink-muted">
+              {pickingForSomeoneElse && onTheClock
+                ? `Confirm pick for ${playerById.get(onTheClock)?.display_name ?? "player"}`
+                : "Confirm your pick"}
+            </p>
             <p className="mt-1 text-lg font-semibold">
               {confirmSelection.teamName}{" "}
               <span className="capitalize text-accent">
