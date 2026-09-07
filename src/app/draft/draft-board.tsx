@@ -13,6 +13,7 @@ interface Team {
   code: string;
   conference: string;
   division: string;
+  win_total_line: number | null;
 }
 interface Player {
   id: string;
@@ -56,6 +57,7 @@ export function DraftBoard({
     teamId: number;
     teamName: string;
     side: Side;
+    line: number | null;
   } | null>(null);
 
   useEffect(() => {
@@ -180,6 +182,7 @@ export function DraftBoard({
         {visibleTeams.map((team) => {
           const overTaken = takenKeys.has(`${team.id}:over`);
           const underTaken = takenKeys.has(`${team.id}:under`);
+          const line = team.win_total_line;
           return (
             <div key={team.id} className="rounded-lg border border-border bg-surface p-3">
               <div className="flex items-center gap-2">
@@ -188,28 +191,29 @@ export function DraftBoard({
                   <p className="text-sm font-medium">{team.name}</p>
                   <p className="text-xs text-ink-muted">
                     {team.conference} {team.division}
+                    {line != null ? ` · Line ${line}` : ""}
                   </p>
                 </div>
               </div>
               <div className="mt-2 flex gap-2">
                 <PickButton
-                  label="Over"
+                  label={line != null ? `Over ${line}` : "Over"}
                   variant="good"
                   taken={overTaken}
                   disabled={!isMyTurn}
                   pending={pendingKey === `${team.id}:over`}
                   onClick={() =>
-                    setConfirmSelection({ teamId: team.id, teamName: team.name, side: "over" })
+                    setConfirmSelection({ teamId: team.id, teamName: team.name, side: "over", line })
                   }
                 />
                 <PickButton
-                  label="Under"
+                  label={line != null ? `Under ${line}` : "Under"}
                   variant="bad"
                   taken={underTaken}
                   disabled={!isMyTurn}
                   pending={pendingKey === `${team.id}:under`}
                   onClick={() =>
-                    setConfirmSelection({ teamId: team.id, teamName: team.name, side: "under" })
+                    setConfirmSelection({ teamId: team.id, teamName: team.name, side: "under", line })
                   }
                 />
               </div>
@@ -231,6 +235,7 @@ export function DraftBoard({
                 #{pick.pick_number} — {playerById.get(pick.user_id)?.display_name} took{" "}
                 <span className="text-ink">
                   {team?.name} {pick.side}
+                  {team?.win_total_line != null ? ` ${team.win_total_line}` : ""}
                 </span>
               </li>
             );
@@ -245,7 +250,10 @@ export function DraftBoard({
             <p className="text-sm text-ink-muted">Confirm your pick</p>
             <p className="mt-1 text-lg font-semibold">
               {confirmSelection.teamName}{" "}
-              <span className="capitalize text-accent">{confirmSelection.side}</span>
+              <span className="capitalize text-accent">
+                {confirmSelection.side}
+                {confirmSelection.line != null ? ` ${confirmSelection.line}` : ""}
+              </span>
             </p>
             <p className="mt-1 text-xs text-ink-muted">This can&apos;t be undone by you once submitted.</p>
             <div className="mt-4 flex gap-2">

@@ -18,7 +18,7 @@ export default async function DraftPage() {
         : Promise.resolve({ data: null }),
       supabase
         .from("teams")
-        .select("id, name, code, conference, division")
+        .select("id, name, code, conference, division, win_total_line")
         .order("conference")
         .order("division")
         .order("name"),
