@@ -52,6 +52,32 @@ export default function PrivacyPage() {
 
       <section className="space-y-2 text-sm text-ink">
         <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          SMS/MMS messaging terms
+        </h2>
+        <ul className="list-inside list-disc space-y-1">
+          <li>
+            <strong>No sharing of mobile information:</strong> your mobile phone number and any
+            SMS/MMS opt-in consent are never shared or sold to any third party for marketing or
+            promotional purposes. Your number is used only to deliver contest updates to you.
+          </li>
+          <li>
+            <strong>Message frequency:</strong> message frequency varies with contest activity —
+            typically a handful of messages during the live draft, plus occasional updates during
+            the season. No recurring or scheduled messages are sent outside of contest events.
+          </li>
+          <li>
+            <strong>Message and data rates may apply.</strong>
+          </li>
+          <li>
+            Reply <strong>STOP</strong> at any time to stop receiving messages, or{" "}
+            <strong>HELP</strong> for assistance. You can also opt out by removing your phone
+            number from your profile (see below).
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-2 text-sm text-ink">
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
           Who can see it
         </h2>
         <p>
