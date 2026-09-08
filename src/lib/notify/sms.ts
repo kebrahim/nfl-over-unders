@@ -42,7 +42,7 @@ export async function sendGroupText(message: string): Promise<void> {
       {
         method: "POST",
         headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ Body: `🏈 Gridiron: ${message}` }),
+        body: new URLSearchParams({ Body: `🏈 Gridiron: ${message} Reply STOP to opt out.` }),
       },
     );
     if (!res.ok) {
