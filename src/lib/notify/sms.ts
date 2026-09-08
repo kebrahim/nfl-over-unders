@@ -52,3 +52,34 @@ export async function sendGroupText(message: string): Promise<void> {
     console.error("Twilio sendGroupText error:", err);
   }
 }
+
+const OPT_IN_MESSAGE =
+  "🏈 Gridiron: You're opted in to text updates for the Gridiron NFL pool " +
+  "(gridiron.zebrahim.com) — draft turn alerts, pick updates, and score notifications. " +
+  "Msg frequency varies, msg & data rates may apply. Reply STOP to opt out, HELP for help.";
+
+/**
+ * Sends the one-time opt-in confirmation directly to a newly-added phone
+ * number (1:1, via the plain Messages API — the group Conversation may
+ * not exist yet at this point). Call only when a phone number is first
+ * set, not on every edit. No-ops/logs on failure, same as sendGroupText.
+ */
+export async function sendOptInConfirmation(phone: string): Promise<void> {
+  const auth = twilioAuthHeader();
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  if (!auth || !fromNumber) return;
+
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  try {
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      method: "POST",
+      headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ To: phone, From: fromNumber, Body: OPT_IN_MESSAGE }),
+    });
+    if (!res.ok) {
+      console.error("Twilio sendOptInConfirmation failed:", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("Twilio sendOptInConfirmation error:", err);
+  }
+}

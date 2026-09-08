@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import { divisionPicksLocked } from "@/lib/domain/season";
 import { normalizeUsPhone } from "@/lib/domain/phone";
+import { sendOptInConfirmation } from "@/lib/notify/sms";
 import type { Division } from "@/lib/supabase/types";
 
 export interface PredictionFormState {
@@ -97,7 +98,7 @@ export async function savePhone(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_demo")
+    .select("is_demo, phone")
     .eq("id", user.id)
     .single();
   if (profile?.is_demo) {
@@ -112,6 +113,10 @@ export async function savePhone(
 
   const { error } = await supabase.from("profiles").update({ phone }).eq("id", user.id);
   if (error) return { error: error.message, success: false };
+
+  if (phone && !profile?.phone) {
+    await sendOptInConfirmation(phone);
+  }
 
   revalidatePath("/my-picks");
   revalidatePath("/admin");

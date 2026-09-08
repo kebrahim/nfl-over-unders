@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import { normalizeUsPhone } from "@/lib/domain/phone";
+import { sendOptInConfirmation } from "@/lib/notify/sms";
 
 export interface AdminFormState {
   error: string | null;
@@ -123,8 +124,13 @@ export async function savePlayerPhone(
   // this needs the service role — the is_commissioner check above is the
   // authorization gate.
   const db = createServiceRoleClient();
+  const { data: existing } = await db.from("profiles").select("phone").eq("id", userId).single();
   const { error } = await db.from("profiles").update({ phone }).eq("id", userId);
   if (error) return { error: error.message, success: false };
+
+  if (phone && !existing?.phone) {
+    await sendOptInConfirmation(phone);
+  }
 
   revalidatePath("/admin");
   return { error: null, success: true };
