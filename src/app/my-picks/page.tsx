@@ -120,11 +120,21 @@ export default async function MyPicksPage() {
         {!isDemo && (
           <div className="mt-6">
             <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-              Phone number
+              Get text updates
             </h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Used only for the group text with draft updates — the commissioner sets that up
-              from Admin once everyone&apos;s added theirs.
+              By providing your mobile number below, you agree to receive SMS/MMS messages from
+              Gridiron (gridiron.zebrahim.com) with draft turn alerts, pick updates, and score
+              notifications. Message frequency varies. Message and data rates may apply. Reply
+              STOP to opt out at any time, or HELP for help. See our{" "}
+              <a href="/privacy" className="text-accent hover:underline">
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a href="/terms" className="text-accent hover:underline">
+                Terms &amp; Conditions
+              </a>
+              .
             </p>
             <div className="mt-3">
               <PhoneForm existing={profile.phone} />
