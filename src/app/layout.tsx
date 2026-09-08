@@ -33,9 +33,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-bg text-ink">
         <Nav />
         {children}
-        <footer className="border-t border-border px-6 py-4 text-center text-xs text-ink-muted">
+        <footer className="flex justify-center gap-4 border-t border-border px-6 py-4 text-center text-xs text-ink-muted">
           <a href="/privacy" className="hover:text-ink">
             Privacy Policy
+          </a>
+          <a href="/terms" className="hover:text-ink">
+            Terms &amp; Conditions
           </a>
         </footer>
       </body>
