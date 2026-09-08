@@ -56,9 +56,10 @@ export default function PrivacyPage() {
         </h2>
         <ul className="list-inside list-disc space-y-1">
           <li>
-            <strong>No sharing of mobile information:</strong> your mobile phone number and any
-            SMS/MMS opt-in consent are never shared or sold to any third party for marketing or
-            promotional purposes. Your number is used only to deliver contest updates to you.
+            <strong>No sharing of mobile information:</strong> No mobile information will be
+            shared with third parties/affiliates for marketing/promotional purposes. All the
+            above categories exclude text messaging originator opt-in data and consent; this
+            information will not be shared with any third parties.
           </li>
           <li>
             <strong>Message frequency:</strong> message frequency varies with contest activity —
