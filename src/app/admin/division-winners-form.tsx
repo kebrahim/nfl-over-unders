@@ -36,6 +36,7 @@ export function DivisionWinnersForm({
             <label key={division} className="flex items-center justify-between gap-3 text-sm">
               {division}
               <select
+                key={existing.get(division) ?? "empty"}
                 name={`division:${division}`}
                 defaultValue={existing.get(division) ?? ""}
                 className="rounded-md border border-border bg-bg px-2 py-1 text-ink focus:border-accent focus:outline-none"

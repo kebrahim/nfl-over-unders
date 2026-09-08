@@ -12,6 +12,7 @@ export function PhoneEditForm({ userId, existing }: { userId: string; existing: 
     <form action={action} className="mt-1 flex flex-wrap items-center gap-2">
       <input type="hidden" name="userId" value={userId} />
       <input
+        key={existing ?? "empty"}
         name="phone"
         type="tel"
         placeholder="(555) 123-4567"

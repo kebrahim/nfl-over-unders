@@ -39,6 +39,7 @@ export function DivisionForm({
             <div key={division} className="space-y-1">
               <label className="text-sm font-medium">{division}</label>
               <select
+                key={existing.get(division) ?? "empty"}
                 name={`division:${division}`}
                 defaultValue={existing.get(division) ?? ""}
                 disabled={locked}

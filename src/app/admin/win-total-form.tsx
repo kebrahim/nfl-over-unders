@@ -26,6 +26,7 @@ export function WinTotalForm({ teams }: { teams: Team[] }) {
               {team.name}
             </span>
             <input
+              key={team.win_total_line ?? "empty"}
               type="number"
               step={0.5}
               name={`line:${team.id}`}

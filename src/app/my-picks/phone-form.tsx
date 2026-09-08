@@ -15,6 +15,7 @@ export function PhoneForm({ existing }: { existing: string | null }) {
           Phone number
         </label>
         <input
+          key={existing ?? "empty"}
           id="phone"
           name="phone"
           type="tel"

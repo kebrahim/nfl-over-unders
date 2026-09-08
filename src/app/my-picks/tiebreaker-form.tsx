@@ -15,6 +15,7 @@ export function TiebreakerForm({ existing }: { existing: number | null }) {
           Total points scored, all regular-season games
         </label>
         <input
+          key={existing ?? "empty"}
           id="points_guess"
           name="points_guess"
           type="number"
