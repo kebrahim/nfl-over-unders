@@ -125,6 +125,18 @@ export async function savePlayerPhone(
   // authorization gate.
   const db = createServiceRoleClient();
   const { data: existing } = await db.from("profiles").select("phone").eq("id", userId).single();
+
+  // Adding or changing a number on someone else's behalf requires the
+  // commissioner to affirmatively confirm consent was obtained — this is
+  // the actual, enforced record of that second opt-in path, not just a
+  // claim in a policy document.
+  if (phone && phone !== existing?.phone && formData.get("confirmed") !== "on") {
+    return {
+      error: "Check the confirmation box to confirm you asked them before adding this number.",
+      success: false,
+    };
+  }
+
   const { error } = await db.from("profiles").update({ phone }).eq("id", userId);
   if (error) return { error: error.message, success: false };
 

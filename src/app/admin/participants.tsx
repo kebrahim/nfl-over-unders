@@ -47,7 +47,7 @@ export function Participants({
               {p.display_name}
             </p>
             <p className="text-sm text-ink-muted">{p.email}</p>
-            <PhoneEditForm userId={p.id} existing={p.phone} />
+            <PhoneEditForm userId={p.id} displayName={p.display_name} existing={p.phone} />
 
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <div>
