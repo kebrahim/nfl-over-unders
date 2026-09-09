@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/privacy", "/terms"];
 
 // Refreshes the Supabase auth session on every request, mirrors the
 // updated cookies onto the response, and redirects signed-out visitors
