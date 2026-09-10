@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { TeamLogo } from "@/components/team-logo";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import { divisionPicksLocked } from "@/lib/domain/season";
+import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
 import {
   DEMO_DIVISION_PREDICTIONS,
   DEMO_LEAGUE_TOTAL_POINTS,
@@ -149,6 +150,17 @@ export default async function LeaderboardPage() {
         <p className="mt-4 text-sm text-ink-muted">
           League-wide points scored so far: {leaguePoints.total_points} across{" "}
           {leaguePoints.games_final} completed games.
+          {(() => {
+            const pace = projectedLeaguePoints(leaguePoints.total_points, leaguePoints.games_final);
+            return pace != null ? (
+              <>
+                {" "}
+                On pace for{" "}
+                <span className="font-semibold text-accent">{Math.round(pace)}</span> across all{" "}
+                {TOTAL_REGULAR_SEASON_GAMES} games.
+              </>
+            ) : null;
+          })()}
         </p>
       )}
 

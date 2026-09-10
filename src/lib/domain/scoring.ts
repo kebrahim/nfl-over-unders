@@ -1,6 +1,7 @@
 import type { Side } from "@/lib/supabase/types";
 
 export const REGULAR_SEASON_GAMES_PER_TEAM = 17;
+export const TOTAL_REGULAR_SEASON_GAMES = 272;
 export const BONUS_PER_WIN_MARGIN = 0.5;
 export const MAX_BONUS_POINTS = 3;
 export const POINTS_PER_DIVISION_PICK = 1;
@@ -46,4 +47,14 @@ export function scorePick(
 export function projectedWins(wins: number, gamesPlayed: number): number | null {
   if (gamesPlayed <= 0) return null;
   return (wins / gamesPlayed) * REGULAR_SEASON_GAMES_PER_TEAM;
+}
+
+/**
+ * Projects the league-wide total-points pace across all 272 regular-
+ * season games, for display only (the leaderboard's "on pace" figure) —
+ * relevant to the tiebreaker, which guesses this same final total.
+ */
+export function projectedLeaguePoints(totalPoints: number, gamesFinal: number): number | null {
+  if (gamesFinal <= 0) return null;
+  return (totalPoints / gamesFinal) * TOTAL_REGULAR_SEASON_GAMES;
 }
