@@ -28,9 +28,11 @@ export default function PrivacyPage() {
         <ul className="list-inside list-disc space-y-1">
           <li>Name and email address, used to create your account and identify your picks.</li>
           <li>
-            Phone number (optional), used only to add you to a group text thread with draft and
-            score updates. You provide this yourself, or ask the contest organizer to add it on
-            your behalf — either way, it is only added with your knowledge and consent.
+            Phone number (entirely optional), used only to add you to a group text thread with
+            draft and score updates. This is collected exclusively through a web form on the My
+            Picks page, where you enter your own number and check an unchecked-by-default consent
+            checkbox before it is saved — declining to check it means no phone number is stored
+            and no messages are sent, with no effect on your participation in the contest.
           </li>
           <li>Your draft picks, division predictions, and tiebreaker guess for the contest.</li>
         </ul>
@@ -94,8 +96,8 @@ export default function PrivacyPage() {
           Opting out of text messages
         </h2>
         <p>
-          You can stop receiving texts at any time by removing your phone number from your
-          profile (or asking the organizer to remove it for you). Doing so does not affect your
+          You can stop receiving texts at any time by replying STOP, or by removing your phone
+          number from your profile on the My Picks page. Doing so does not affect your
           participation in the contest itself.
         </p>
       </section>

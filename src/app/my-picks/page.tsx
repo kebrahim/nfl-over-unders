@@ -123,10 +123,8 @@ export default async function MyPicksPage() {
               Get text updates
             </h2>
             <p className="mt-1 text-sm text-ink-muted">
-              By providing your mobile number below, you agree to receive SMS/MMS messages from
-              Gridiron (gridiron.zebrahim.com) with draft turn alerts, pick updates, and score
-              notifications. Message frequency varies. Message and data rates may apply. Reply
-              STOP to opt out at any time, or HELP for help. See our{" "}
+              Optional — add your number and check the box below if you&apos;d like draft updates
+              by text. See our{" "}
               <a href="/privacy" className="text-accent hover:underline">
                 Privacy Policy
               </a>{" "}

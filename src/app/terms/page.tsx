@@ -27,16 +27,17 @@ export default function TermsPage() {
         </h2>
         <ul className="list-inside list-disc space-y-1">
           <li>
-            By providing your mobile phone number (or asking the organizer to add it for you),
-            you consent to receive SMS/MMS text messages related to the contest — draft-turn
-            notifications, pick updates, and season updates — as part of a shared group text
-            thread with the other participants.
+            SMS/MMS text messages are entirely optional. On the My Picks page, you may enter your
+            mobile phone number and check an unchecked-by-default consent box to opt in to
+            receiving updates related to the contest — draft-turn notifications, pick updates,
+            and season updates — as part of a shared group text thread with the other
+            participants. Declining does not affect your participation in the contest.
           </li>
           <li>Message frequency varies with contest activity. Message and data rates may apply.</li>
           <li>
             Reply <strong>STOP</strong> at any time to opt out of messages, or{" "}
             <strong>HELP</strong> for assistance. You can also opt out by removing your phone
-            number from your profile, or asking the organizer to remove it for you.
+            number from your profile on the My Picks page.
           </li>
           <li>
             Carriers are not liable for delayed or undelivered messages. Supported carriers

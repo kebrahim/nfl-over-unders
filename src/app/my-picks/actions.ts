@@ -111,6 +111,12 @@ export async function savePhone(
     return { error: "Enter a valid 10-digit US phone number.", success: false };
   }
 
+  // The checkbox is the actual opt-in — a phone number is never saved
+  // without it checked, so consent is enforced here, not just claimed.
+  if (phone && formData.get("consent") !== "on") {
+    return { error: "Check the box to opt in before saving your number.", success: false };
+  }
+
   const { error } = await supabase.from("profiles").update({ phone }).eq("id", user.id);
   if (error) return { error: error.message, success: false };
 

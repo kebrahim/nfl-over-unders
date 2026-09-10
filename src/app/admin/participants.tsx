@@ -1,5 +1,4 @@
 import { TeamLogo } from "@/components/team-logo";
-import { PhoneEditForm } from "./phone-edit-form";
 
 interface Participant {
   id: string;
@@ -47,7 +46,13 @@ export function Participants({
               {p.display_name}
             </p>
             <p className="text-sm text-ink-muted">{p.email}</p>
-            <PhoneEditForm userId={p.id} displayName={p.display_name} existing={p.phone} />
+            <p className="text-xs text-ink-muted">
+              {p.phone ? (
+                <span className="text-good">✓ Opted in to text updates</span>
+              ) : (
+                "No phone on file — they can add one on My Picks."
+              )}
+            </p>
 
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <div>
