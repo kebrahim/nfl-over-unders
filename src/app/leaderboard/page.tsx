@@ -1,13 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { TeamLogo } from "@/components/team-logo";
+import { DIVISIONS } from "@/lib/domain/divisions";
+import { divisionPicksLocked } from "@/lib/domain/season";
 import {
+  DEMO_DIVISION_PREDICTIONS,
   DEMO_LEAGUE_TOTAL_POINTS,
   DEMO_TEAMS,
   DEMO_TIEBREAKER_PREDICTIONS,
   demoDraftPickScores,
   demoOverallLeaderboard,
 } from "@/lib/demo/data";
+import type { Division } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +27,7 @@ type PickScore = {
   points: number;
 };
 type Team = { id: number; name: string; code: string };
+type DivisionPrediction = { user_id: string; division: Division; predicted_team_id: number };
 
 export default async function LeaderboardPage() {
   const profile = await getCurrentProfile();
@@ -32,6 +37,9 @@ export default async function LeaderboardPage() {
   let leaguePoints: { total_points: number; games_final: number } | null;
   let pickScores: PickScore[];
   let teams: Team[];
+  let divisionPredictions: DivisionPrediction[];
+
+  const picksAreVisible = profile?.is_demo || divisionPicksLocked() || !!profile?.is_commissioner;
 
   if (profile?.is_demo) {
     rows = demoOverallLeaderboard();
@@ -39,6 +47,7 @@ export default async function LeaderboardPage() {
     leaguePoints = DEMO_LEAGUE_TOTAL_POINTS;
     pickScores = demoDraftPickScores();
     teams = DEMO_TEAMS;
+    divisionPredictions = DEMO_DIVISION_PREDICTIONS;
   } else {
     const supabase = await createClient();
     const [
@@ -47,6 +56,7 @@ export default async function LeaderboardPage() {
       { data: fetchedLeaguePoints },
       { data: fetchedPickScores },
       { data: fetchedTeams },
+      { data: fetchedDivisionPredictions },
     ] = await Promise.all([
       supabase
         .from("overall_leaderboard")
@@ -59,15 +69,25 @@ export default async function LeaderboardPage() {
         .select("pick_id, user_id, team_id, side, wins, games_played, win_total_line, resolved, points")
         .order("pick_number"),
       supabase.from("teams").select("id, name, code"),
+      // RLS decides what's actually visible here: your own row always,
+      // everyone's once picks lock, or always if you're commissioner.
+      supabase.from("division_predictions").select("user_id, division, predicted_team_id"),
     ]);
     rows = leaderboard ?? [];
     guessByUser = new Map((tiebreakers ?? []).map((t) => [t.user_id, t.points_guess]));
     leaguePoints = fetchedLeaguePoints;
     pickScores = fetchedPickScores ?? [];
     teams = fetchedTeams ?? [];
+    divisionPredictions = (fetchedDivisionPredictions ?? []) as DivisionPrediction[];
   }
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
+  const divisionPicksByUser = new Map<string, Map<Division, number>>();
+  for (const p of divisionPredictions) {
+    const map = divisionPicksByUser.get(p.user_id) ?? new Map<Division, number>();
+    map.set(p.division, p.predicted_team_id);
+    divisionPicksByUser.set(p.user_id, map);
+  }
   const picksByUser = new Map<string, PickScore[]>();
   for (const pick of pickScores) {
     const list = picksByUser.get(pick.user_id) ?? [];
@@ -136,10 +156,16 @@ export default async function LeaderboardPage() {
         <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
           Everyone&apos;s Picks
         </h2>
+        {!picksAreVisible && (
+          <p className="text-sm text-ink-muted">
+            Division picks will be shown here once they lock at kickoff.
+          </p>
+        )}
         {rows.map((row) => {
           const picks = (picksByUser.get(row.user_id) ?? []).sort(
             (a, b) => (teamById.get(a.team_id)?.name ?? "").localeCompare(teamById.get(b.team_id)?.name ?? ""),
           );
+          const divisionPicks = divisionPicksByUser.get(row.user_id);
           return (
             <div key={row.user_id} className="overflow-hidden rounded-lg border border-border bg-surface">
               <div className="flex items-center justify-between border-b border-border bg-surface-2 px-4 py-2">
@@ -191,6 +217,32 @@ export default async function LeaderboardPage() {
                   )}
                 </tbody>
               </table>
+              {picksAreVisible && (
+                <div className="border-t border-border px-4 py-2">
+                  <p className="text-xs font-medium tracking-wide text-ink-muted uppercase">
+                    Division picks ({row.division_points} pt{row.division_points === 1 ? "" : "s"})
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    {DIVISIONS.map((division) => {
+                      const teamId = divisionPicks?.get(division);
+                      const team = teamId != null ? teamById.get(teamId) : undefined;
+                      return (
+                        <span key={division} className="flex items-center gap-1.5">
+                          <span className="text-ink-muted">{division}:</span>
+                          {team ? (
+                            <span className="flex items-center gap-1">
+                              <TeamLogo code={team.code} name={team.name} size={14} />
+                              {team.name}
+                            </span>
+                          ) : (
+                            <span className="text-ink-muted">—</span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
