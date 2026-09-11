@@ -5,6 +5,7 @@ import { fromEspnCode } from "@/lib/domain/espn";
 import { computeNflWeek } from "@/lib/domain/season";
 import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
 import { sendGroupText } from "@/lib/notify/sms";
+import { generateWeeklyRecapMessage } from "@/lib/notify/weekly-recap";
 
 // Pulls current scores from ESPN's public (unofficial, undocumented but
 // widely relied on) scoreboard endpoint and upserts them into `games`.
@@ -140,10 +141,13 @@ async function performSync() {
 
 /**
  * Sends one group-text recap the first time each NFL week's games are
- * all final. Draft/division points don't meaningfully change week to
- * week (they only resolve once a team's full 17-game season is in), so
- * the recap is the league-wide scoring pace rather than a leaderboard
- * that would mostly show zeros until the season ends.
+ * all final. Prefers a Claude-written recap highlighting meaningful
+ * outcomes among drafted teams; falls back to a simple league-wide
+ * scoring-pace line if ANTHROPIC_API_KEY isn't set or generation fails.
+ * Draft/division points aren't part of either version — they don't
+ * meaningfully change week to week (only resolving once a team's full
+ * 17-game season is in), so a leaderboard snapshot would mostly show
+ * zeros until the season ends.
  */
 async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleClient>) {
   const { data: allGames } = await db.from("games").select("week, status");
@@ -173,16 +177,21 @@ async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleCli
   const lastSummarizedWeek = setting?.value ? Number(setting.value) : 0;
   if (completeThroughWeek <= lastSummarizedWeek) return;
 
-  const { data: leaguePoints } = await db
-    .from("league_total_points")
-    .select("total_points, games_final")
-    .single();
-  if (leaguePoints) {
-    const pace = projectedLeaguePoints(leaguePoints.total_points, leaguePoints.games_final);
-    const paceText = pace != null ? ` On pace for ${Math.round(pace)} across all ${TOTAL_REGULAR_SEASON_GAMES} games.` : "";
-    await sendGroupText(
-      `Week ${completeThroughWeek} is in the books! League has scored ${leaguePoints.total_points} points so far.${paceText} Check standings: gridiron.zebrahim.com/standings`,
-    );
+  const recap = await generateWeeklyRecapMessage(completeThroughWeek);
+  if (recap) {
+    await sendGroupText(recap);
+  } else {
+    const { data: leaguePoints } = await db
+      .from("league_total_points")
+      .select("total_points, games_final")
+      .single();
+    if (leaguePoints) {
+      const pace = projectedLeaguePoints(leaguePoints.total_points, leaguePoints.games_final);
+      const paceText = pace != null ? ` On pace for ${Math.round(pace)} across all ${TOTAL_REGULAR_SEASON_GAMES} games.` : "";
+      await sendGroupText(
+        `Week ${completeThroughWeek} is in the books! League has scored ${leaguePoints.total_points} points so far.${paceText} Check standings: gridiron.zebrahim.com/standings`,
+      );
+    }
   }
 
   await db
