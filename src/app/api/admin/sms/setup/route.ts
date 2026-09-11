@@ -32,9 +32,13 @@ export async function POST(request: Request) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
   const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
   const fromNumber = process.env.TWILIO_PHONE_NUMBER?.trim();
-  if (!accountSid || !authToken || !fromNumber) {
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim();
+  if (!accountSid || !authToken || !fromNumber || !messagingServiceSid) {
     return NextResponse.json(
-      { error: "Twilio isn't configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER." },
+      {
+        error:
+          "Twilio isn't configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, and TWILIO_MESSAGING_SERVICE_SID.",
+      },
       { status: 500 },
     );
   }
@@ -68,7 +72,10 @@ export async function POST(request: Request) {
   const createRes = await fetch("https://conversations.twilio.com/v1/Conversations", {
     method: "POST",
     headers: authHeader,
-    body: new URLSearchParams({ FriendlyName: "Gridiron Pool" }),
+    body: new URLSearchParams({
+      FriendlyName: "Gridiron Pool",
+      MessagingServiceSid: messagingServiceSid,
+    }),
   });
   const created = await createRes.json().catch(() => ({}));
   if (!createRes.ok) {
