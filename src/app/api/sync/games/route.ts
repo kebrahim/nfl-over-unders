@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { fromEspnCode } from "@/lib/domain/espn";
 import { computeNflWeek } from "@/lib/domain/season";
+import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
+import { sendGroupText } from "@/lib/notify/sms";
 
 // Pulls current scores from ESPN's public (unofficial, undocumented but
 // widely relied on) scoreboard endpoint and upserts them into `games`.
@@ -14,6 +16,7 @@ import { computeNflWeek } from "@/lib/domain/season";
 const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 const MIN_WEEK = 1;
 const MAX_WEEK = 18;
+const LAST_WEEKLY_SUMMARY_KEY = "last_weekly_summary_week";
 
 interface EspnCompetitor {
   homeAway: "home" | "away";
@@ -130,7 +133,61 @@ async function performSync() {
   const { error } = await db.from("games").upsert(games, { onConflict: "id" });
   if (error) throw new Error(error.message);
 
+  await maybeSendWeeklySummary(db);
+
   return { synced: games.length, rawEvents: events.length };
+}
+
+/**
+ * Sends one group-text recap the first time each NFL week's games are
+ * all final. Draft/division points don't meaningfully change week to
+ * week (they only resolve once a team's full 17-game season is in), so
+ * the recap is the league-wide scoring pace rather than a leaderboard
+ * that would mostly show zeros until the season ends.
+ */
+async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleClient>) {
+  const { data: allGames } = await db.from("games").select("week, status");
+  if (!allGames) return;
+
+  const byWeek = new Map<number, { total: number; final: number }>();
+  for (const g of allGames) {
+    const entry = byWeek.get(g.week) ?? { total: 0, final: 0 };
+    entry.total++;
+    if (g.status === "final") entry.final++;
+    byWeek.set(g.week, entry);
+  }
+
+  let completeThroughWeek = 0;
+  for (let week = MIN_WEEK; week <= MAX_WEEK; week++) {
+    const entry = byWeek.get(week);
+    if (!entry || entry.total === 0 || entry.final < entry.total) break;
+    completeThroughWeek = week;
+  }
+  if (completeThroughWeek === 0) return;
+
+  const { data: setting } = await db
+    .from("app_settings")
+    .select("value")
+    .eq("key", LAST_WEEKLY_SUMMARY_KEY)
+    .maybeSingle();
+  const lastSummarizedWeek = setting?.value ? Number(setting.value) : 0;
+  if (completeThroughWeek <= lastSummarizedWeek) return;
+
+  const { data: leaguePoints } = await db
+    .from("league_total_points")
+    .select("total_points, games_final")
+    .single();
+  if (leaguePoints) {
+    const pace = projectedLeaguePoints(leaguePoints.total_points, leaguePoints.games_final);
+    const paceText = pace != null ? ` On pace for ${Math.round(pace)} across all ${TOTAL_REGULAR_SEASON_GAMES} games.` : "";
+    await sendGroupText(
+      `Week ${completeThroughWeek} is in the books! League has scored ${leaguePoints.total_points} points so far.${paceText} Check standings: gridiron.zebrahim.com/standings`,
+    );
+  }
+
+  await db
+    .from("app_settings")
+    .upsert({ key: LAST_WEEKLY_SUMMARY_KEY, value: String(completeThroughWeek) }, { onConflict: "key" });
 }
 
 async function requireAuthorized(request: Request): Promise<NextResponse | null> {
