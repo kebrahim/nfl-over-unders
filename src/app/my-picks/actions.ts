@@ -61,6 +61,9 @@ export async function saveTiebreaker(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be signed in.", success: false };
+  if (divisionPicksLocked()) {
+    return { error: "The tiebreaker guess is locked — the season has started.", success: false };
+  }
 
   const { data: profile } = await supabase
     .from("profiles")

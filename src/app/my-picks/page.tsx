@@ -311,7 +311,20 @@ export default async function MyPicksPage() {
           )}
         </div>
         <p className="mt-1 text-sm text-ink-muted">
-          Only used if the final standings are tied.
+          Only used if the final standings are tied.{" "}
+          {isDemo ? null : divisionPicksLocked() ? (
+            <span className="text-bad">Locked — the season has started.</span>
+          ) : (
+            <>
+              Locks at kickoff:{" "}
+              {new Date(DIVISION_PICKS_LOCK_AT).toLocaleString("en-US", {
+                timeZone: "America/New_York",
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}{" "}
+              ET.
+            </>
+          )}
         </p>
         <div className="mt-4">
           {isDemo ? (
@@ -320,7 +333,7 @@ export default async function MyPicksPage() {
               points
             </p>
           ) : (
-            <TiebreakerForm existing={tiebreakerGuess} />
+            <TiebreakerForm existing={tiebreakerGuess} locked={divisionPicksLocked()} />
           )}
         </div>
       </div>
