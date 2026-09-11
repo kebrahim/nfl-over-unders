@@ -87,6 +87,13 @@ export async function POST(request: Request) {
   const conversationSid = created.sid as string;
 
   for (const player of players) {
+    // Only Address, no ProjectedAddress: this participant is a real phone
+    // joining natively from their own number. ProjectedAddress is for a
+    // *different* participant type (a chat/app identity given a Twilio
+    // number as its avatar) — combining the two isn't a valid binding
+    // shape and is what caused "Invalid messaging binding address."
+    // The Messaging Service attached to the Conversation supplies the
+    // shared sending number automatically.
     const participantRes = await fetch(
       `https://conversations.twilio.com/v1/Conversations/${conversationSid}/Participants`,
       {
@@ -94,7 +101,6 @@ export async function POST(request: Request) {
         headers: authHeader,
         body: new URLSearchParams({
           "MessagingBinding.Address": player.phone!,
-          "MessagingBinding.ProjectedAddress": fromNumber,
         }),
       },
     );
