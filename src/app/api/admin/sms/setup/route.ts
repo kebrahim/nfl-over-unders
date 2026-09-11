@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       const errorBody = await participantRes.json().catch(() => ({}));
       return NextResponse.json(
         {
-          error: `Created the thread but failed to add ${player.display_name}: ${errorBody.message ?? participantRes.status}`,
+          error: `Created the thread but failed to add ${player.display_name} (number on file: ${player.phone}): ${errorBody.message ?? participantRes.status}`,
         },
         { status: 500 },
       );
