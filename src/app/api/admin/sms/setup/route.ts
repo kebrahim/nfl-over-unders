@@ -116,6 +116,29 @@ export async function POST(request: Request) {
     }
   }
 
+  // An "unattached" participant — ProjectedAddress only, no Address or
+  // Identity — representing the app itself as a sender. Without this,
+  // posting a Message with no matching participant author fails with
+  // error 50513 ("Message author should be among Group MMS participants").
+  const botParticipantRes = await fetch(
+    `https://conversations.twilio.com/v1/Conversations/${conversationSid}/Participants`,
+    {
+      method: "POST",
+      headers: authHeader,
+      body: new URLSearchParams({ "MessagingBinding.ProjectedAddress": fromNumber }),
+    },
+  );
+  if (!botParticipantRes.ok) {
+    const errorBody = await botParticipantRes.json().catch(() => ({}));
+    return NextResponse.json(
+      {
+        error: `Created the thread but failed to add the sending number "${fromNumber}" as a participant: ${errorBody.message ?? botParticipantRes.status}`,
+        twilioError: errorBody,
+      },
+      { status: 500 },
+    );
+  }
+
   await setSmsConversationSid(conversationSid);
 
   return NextResponse.json({ conversationSid });

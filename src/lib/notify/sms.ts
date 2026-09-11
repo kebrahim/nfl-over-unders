@@ -36,6 +36,9 @@ export async function sendGroupText(message: string): Promise<SendResult> {
   const auth = twilioAuthHeader();
   if (!auth) return { ok: false, error: "Twilio isn't configured." };
 
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  if (!fromNumber) return { ok: false, error: "TWILIO_PHONE_NUMBER isn't set." };
+
   const conversationSid = await getSmsConversationSid();
   if (!conversationSid) return { ok: false, error: "No group text thread has been created yet." };
 
@@ -45,7 +48,13 @@ export async function sendGroupText(message: string): Promise<SendResult> {
       {
         method: "POST",
         headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ Body: `🏈 Gridiron: ${message} Reply STOP to opt out.` }),
+        // Author must match the "unattached" ProjectedAddress participant
+        // added during setup — otherwise Twilio rejects the message with
+        // 50513 ("Message author should be among Group MMS participants").
+        body: new URLSearchParams({
+          Author: fromNumber,
+          Body: `🏈 Gridiron: ${message} Reply STOP to opt out.`,
+        }),
       },
     );
     if (!res.ok) {
