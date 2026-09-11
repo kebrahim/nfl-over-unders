@@ -55,6 +55,20 @@ export function SmsSetup({
     setResult("Test text sent to your own number — check your phone.");
   }
 
+  async function sendGroupTest() {
+    setPending(true);
+    setError(null);
+    setResult(null);
+    const res = await fetch("/api/admin/sms/test-group", { method: "POST" });
+    const body = await res.json();
+    setPending(false);
+    if (!res.ok) {
+      setError(body.error ?? "Something went wrong.");
+      return;
+    }
+    setResult("Test message sent to the group thread — check everyone's phone.");
+  }
+
   return (
     <div className="space-y-2">
       {missingPhoneNames.length > 0 && (
@@ -92,6 +106,16 @@ export function SmsSetup({
         >
           Send me a test text
         </button>
+        {configured && (
+          <button
+            type="button"
+            onClick={sendGroupTest}
+            disabled={pending}
+            className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+          >
+            Send test to group thread
+          </button>
+        )}
       </div>
       {result && <p className="text-sm text-good">{result}</p>}
       {error && <p className="text-sm text-bad">{error}</p>}

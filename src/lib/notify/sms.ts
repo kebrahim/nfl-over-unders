@@ -24,17 +24,20 @@ function twilioAuthHeader(): string | null {
   return `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`;
 }
 
+export type SendResult = { ok: true } | { ok: false; error: string };
+
 /**
  * Posts a message into the group MMS thread, if one's been set up.
- * No-ops (and logs) rather than throwing — a notification failure should
- * never break the draft pick or score sync it's attached to.
+ * Never throws — a notification failure should never break the draft
+ * pick or score sync it's attached to — but callers that do care (e.g.
+ * an admin test button) can inspect the returned result.
  */
-export async function sendGroupText(message: string): Promise<void> {
+export async function sendGroupText(message: string): Promise<SendResult> {
   const auth = twilioAuthHeader();
-  if (!auth) return;
+  if (!auth) return { ok: false, error: "Twilio isn't configured." };
 
   const conversationSid = await getSmsConversationSid();
-  if (!conversationSid) return;
+  if (!conversationSid) return { ok: false, error: "No group text thread has been created yet." };
 
   try {
     const res = await fetch(
@@ -46,10 +49,14 @@ export async function sendGroupText(message: string): Promise<void> {
       },
     );
     if (!res.ok) {
-      console.error("Twilio sendGroupText failed:", res.status, await res.text());
+      const text = await res.text();
+      console.error("Twilio sendGroupText failed:", res.status, text);
+      return { ok: false, error: text };
     }
+    return { ok: true };
   } catch (err) {
     console.error("Twilio sendGroupText error:", err);
+    return { ok: false, error: String(err) };
   }
 }
 
