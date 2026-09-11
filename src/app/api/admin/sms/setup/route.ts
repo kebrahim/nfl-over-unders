@@ -29,9 +29,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ conversationSid: existingSid, alreadyExists: true });
   }
 
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
+  const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER?.trim();
   if (!accountSid || !authToken || !fromNumber) {
     return NextResponse.json(
       { error: "Twilio isn't configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER." },
@@ -95,7 +95,8 @@ export async function POST(request: Request) {
       const errorBody = await participantRes.json().catch(() => ({}));
       return NextResponse.json(
         {
-          error: `Created the thread but failed to add ${player.display_name} (number on file: ${player.phone}): ${errorBody.message ?? participantRes.status}`,
+          error: `Created the thread but failed to add ${player.display_name} (number on file: "${player.phone}", sending from: "${fromNumber}"): ${errorBody.message ?? participantRes.status}`,
+          twilioError: errorBody,
         },
         { status: 500 },
       );

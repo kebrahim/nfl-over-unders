@@ -14,11 +14,13 @@ export function SmsSetup({
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [twilioError, setTwilioError] = useState<unknown>(null);
 
   async function setUp(recreate: boolean) {
     setPending(true);
     setError(null);
     setResult(null);
+    setTwilioError(null);
     const res = await fetch("/api/admin/sms/setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -28,6 +30,7 @@ export function SmsSetup({
     setPending(false);
     if (!res.ok) {
       setError(body.error ?? "Something went wrong.");
+      if (body.twilioError) setTwilioError(body.twilioError);
       return;
     }
     setResult(
@@ -92,6 +95,11 @@ export function SmsSetup({
       </div>
       {result && <p className="text-sm text-good">{result}</p>}
       {error && <p className="text-sm text-bad">{error}</p>}
+      {twilioError != null && (
+        <pre className="overflow-x-auto rounded-md border border-border bg-bg p-3 text-xs text-ink-muted">
+          {JSON.stringify(twilioError, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
