@@ -11,6 +11,7 @@ import { DraftControls } from "./draft-controls";
 import { SyncScoresButton } from "./sync-scores-button";
 import { SmsSetup } from "./sms-setup";
 import { RecapToneForm } from "./recap-tone-form";
+import { AdminSection } from "./section";
 import { TeamLogo } from "@/components/team-logo";
 
 export const dynamic = "force-dynamic";
@@ -112,72 +113,44 @@ export default async function AdminPage() {
         <p className="mt-1 text-sm text-ink-muted">Commissioner tools.</p>
       </div>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Participants
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Everyone&apos;s nickname, email, and picks at a glance.
-        </p>
-        <div className="mt-4">
-          <Participants
-            participants={participants ?? []}
-            divisionPicksByUser={divisionPicksByUser}
-            tiebreakerByUser={tiebreakerByUser}
-            draftPicksByUser={draftPicksByUser}
-          />
-        </div>
-      </div>
+      <AdminSection
+        title="Participants"
+        description="Everyone's nickname, email, and picks at a glance."
+      >
+        <Participants
+          participants={participants ?? []}
+          divisionPicksByUser={divisionPicksByUser}
+          tiebreakerByUser={tiebreakerByUser}
+          draftPicksByUser={draftPicksByUser}
+        />
+      </AdminSection>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">Scores</h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Syncs automatically once a day. Use this to pull the latest scores right now.
-        </p>
-        <div className="mt-3">
-          <SyncScoresButton />
-        </div>
-      </div>
+      <AdminSection
+        title="Scores"
+        description="Syncs automatically once a day. Use this to pull the latest scores right now."
+      >
+        <SyncScoresButton />
+      </AdminSection>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Group text
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Sends draft updates to everyone as a group MMS thread. Set up once — after that,
-          picks and turn changes post automatically.
-        </p>
-        <div className="mt-3">
-          <SmsSetup configured={!!smsConversationSid} missingPhoneNames={missingPhoneNames} />
-        </div>
-      </div>
+      <AdminSection
+        title="Group text"
+        description="Sends draft updates to everyone as a group MMS thread. Set up once — after that, picks and turn changes post automatically."
+      >
+        <SmsSetup configured={!!smsConversationSid} missingPhoneNames={missingPhoneNames} />
+      </AdminSection>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Text tone
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Controls how Claude writes both the weekly recap and the upcoming-week preview texts
-          sent to the group thread.
-        </p>
-        <div className="mt-4">
-          <RecapToneForm current={recapTone} />
-        </div>
-      </div>
+      <AdminSection
+        title="Text tone"
+        description="Controls how Claude writes both the weekly recap and the upcoming-week preview texts sent to the group thread."
+      >
+        <RecapToneForm current={recapTone} />
+      </AdminSection>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">Draft</h2>
-        <p className="mt-1 text-sm text-ink-muted">Status: {session?.status ?? "not started"}</p>
-        {!session || session.status === "completed" ? (
-          <div className="mt-3">
-            <StartDraftButton />
-          </div>
-        ) : null}
-        {session && (
-          <div className="mt-3">
-            <DraftControls hasPicks={!!recentPicks && recentPicks.length > 0} />
-          </div>
-        )}
+      <AdminSection title="Draft" description={`Status: ${session?.status ?? "not started"}`}>
+        <div className="space-y-3">
+          {(!session || session.status === "completed") && <StartDraftButton />}
+          {session && <DraftControls hasPicks={!!recentPicks && recentPicks.length > 0} />}
+        </div>
         {recentPicks && recentPicks.length > 0 && (
           <ol className="mt-4 space-y-1 text-sm text-ink-muted">
             {recentPicks.map((p) => {
@@ -192,31 +165,21 @@ export default async function AdminPage() {
             })}
           </ol>
         )}
-      </div>
+      </AdminSection>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Win-total lines
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Set before the draft starts. Use half-point lines to avoid pushes.
-        </p>
-        <div className="mt-4">
-          <WinTotalForm teams={teams ?? []} />
-        </div>
-      </div>
+      <AdminSection
+        title="Win-total lines"
+        description="Set before the draft starts. Use half-point lines to avoid pushes."
+      >
+        <WinTotalForm teams={teams ?? []} />
+      </AdminSection>
 
-      <div>
-        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Division winners
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Record the actual winners once the regular season ends.
-        </p>
-        <div className="mt-4">
-          <DivisionWinnersForm teams={teams ?? []} existing={existingWinners} />
-        </div>
-      </div>
+      <AdminSection
+        title="Division winners"
+        description="Record the actual winners once the regular season ends."
+      >
+        <DivisionWinnersForm teams={teams ?? []} existing={existingWinners} />
+      </AdminSection>
     </main>
   );
 }
