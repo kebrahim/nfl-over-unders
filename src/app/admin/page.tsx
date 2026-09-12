@@ -154,10 +154,11 @@ export default async function AdminPage() {
 
       <div>
         <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-          Recap tone
+          Text tone
         </h2>
         <p className="mt-1 text-sm text-ink-muted">
-          Controls how Claude writes the weekly results recap sent to the group thread.
+          Controls how Claude writes both the weekly recap and the upcoming-week preview texts
+          sent to the group thread.
         </p>
         <div className="mt-4">
           <RecapToneForm current={recapTone} />
