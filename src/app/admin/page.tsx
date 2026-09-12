@@ -67,7 +67,7 @@ export default async function AdminPage() {
       .limit(10),
     supabase
       .from("profiles")
-      .select("id, display_name, email, phone")
+      .select("id, display_name, email, phone, sms_opted_out_at")
       .eq("is_demo", false)
       .order("display_name"),
     supabase.from("division_predictions").select("user_id, division, predicted_team_id"),

@@ -5,6 +5,7 @@ interface Participant {
   display_name: string;
   email: string;
   phone: string | null;
+  sms_opted_out_at: string | null;
 }
 
 interface DivisionPick {
@@ -47,7 +48,9 @@ export function Participants({
             </p>
             <p className="text-sm text-ink-muted">{p.email}</p>
             <p className="text-xs text-ink-muted">
-              {p.phone ? (
+              {p.sms_opted_out_at ? (
+                <span className="text-bad">✗ Opted out of texts (replied STOP)</span>
+              ) : p.phone ? (
                 <span className="text-good">✓ Opted in to text updates</span>
               ) : (
                 "No phone on file — they can add one on My Picks."

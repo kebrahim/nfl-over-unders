@@ -29,6 +29,7 @@ export interface Database {
           phone: string | null;
           is_commissioner: boolean;
           is_demo: boolean;
+          sms_opted_out_at: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & {
