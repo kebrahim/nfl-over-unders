@@ -14,7 +14,6 @@ import {
 import { TeamLogo } from "@/components/team-logo";
 import { DivisionForm } from "./division-form";
 import { TiebreakerForm } from "./tiebreaker-form";
-import { PhoneForm } from "./phone-form";
 
 export const dynamic = "force-dynamic";
 
@@ -125,27 +124,14 @@ export default async function MyPicksPage() {
           {totalPoints} draft point{totalPoints === 1 ? "" : "s"} so far.
         </p>
 
-        {!isDemo && (
-          <div className="mt-6">
-            <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
-              Get text updates
-            </h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Optional — add your number and check the box below if you&apos;d like draft updates
-              by text. See our{" "}
-              <a href="/privacy" className="text-accent hover:underline">
-                Privacy Policy
-              </a>{" "}
-              and{" "}
-              <a href="/terms" className="text-accent hover:underline">
-                Terms &amp; Conditions
-              </a>
-              .
-            </p>
-            <div className="mt-3">
-              <PhoneForm existing={profile.phone} />
-            </div>
-          </div>
+        {!isDemo && !profile.phone && (
+          <p className="mt-4 text-sm text-ink-muted">
+            Want draft turn alerts by text?{" "}
+            <a href="/profile" className="text-accent hover:underline">
+              Add your number on your profile
+            </a>
+            .
+          </p>
         )}
 
         {somethingMissing && (

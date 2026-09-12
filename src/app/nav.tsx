@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/my-picks", label: "My Picks" },
   { href: "/standings", label: "Standings" },
+  { href: "/profile", label: "Profile" },
 ];
 
 export async function Nav() {
@@ -73,7 +74,9 @@ export async function Nav() {
           {user && <MobileNav links={LINKS} showAdmin={isCommissioner} />}
           {user ? (
             <>
-              <span className="hidden text-ink-muted sm:inline">{displayName}</span>
+              <Link href="/profile" className="hidden text-ink-muted hover:text-ink sm:inline">
+                {displayName}
+              </Link>
               <form action={signOut}>
                 <button type="submit" className="font-medium hover:text-accent">
                   Sign out
