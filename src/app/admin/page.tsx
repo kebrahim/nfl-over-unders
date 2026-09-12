@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { getSmsConversationSid } from "@/lib/notify/sms";
+import { getRecapTone } from "@/lib/notify/weekly-recap";
 import type { Division } from "@/lib/supabase/types";
 import { WinTotalForm } from "./win-total-form";
 import { DivisionWinnersForm } from "./division-winners-form";
@@ -9,6 +10,7 @@ import { StartDraftButton } from "../draft/start-draft-button";
 import { DraftControls } from "./draft-controls";
 import { SyncScoresButton } from "./sync-scores-button";
 import { SmsSetup } from "./sms-setup";
+import { RecapToneForm } from "./recap-tone-form";
 import { TeamLogo } from "@/components/team-logo";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +63,7 @@ export default async function AdminPage() {
   ]);
 
   const smsConversationSid = await getSmsConversationSid();
+  const recapTone = await getRecapTone();
   const missingPhoneNames = (participants ?? [])
     .filter((p) => !p.phone)
     .map((p) => p.display_name);
@@ -146,6 +149,18 @@ export default async function AdminPage() {
         </p>
         <div className="mt-3">
           <SmsSetup configured={!!smsConversationSid} missingPhoneNames={missingPhoneNames} />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-lg font-semibold tracking-wide uppercase">
+          Recap tone
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          Controls how Claude writes the weekly results recap sent to the group thread.
+        </p>
+        <div className="mt-4">
+          <RecapToneForm current={recapTone} />
         </div>
       </div>
 

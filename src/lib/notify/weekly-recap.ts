@@ -66,9 +66,46 @@ async function gatherWeekData(week: number): Promise<PickResult[]> {
     .filter((p): p is PickResult => p !== null);
 }
 
-const SYSTEM_PROMPT = `You write a short, brutal group-text recap for 5 close friends in a season-long NFL prediction pool who roast each other without mercy. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted (team, side) picks that played games this week, with the result and each team's current record.
+export type RecapTone = "nice" | "playful" | "snarky" | "brutal";
 
-Write 2-4 sentences absolutely torching whoever deserves it. Call people out by name and go hard — question their judgment, their football knowledge, their life choices for making the pick. Bad losses and blown-out unders should get mocked without restraint, not gently teased. Even a "good" result should get undercut somehow — a backhanded insult, a reason it doesn't actually matter, whatever. Nobody gets a genuine compliment and nobody gets off easy. Full send: sarcastic, savage, a little cruel — these are close friends who can take it, this isn't customer-facing copy, so do not soften it, hedge it, or add a caring/wholesome coda at the end. Skip unremarkable picks if space is tight; spend the words on whoever screwed up worst. No hashtags, no markdown, no emoji beyond an occasional 🏈. Keep the whole thing under 320 characters so it reads well as one text message.`;
+export const RECAP_TONE_KEY = "weekly_recap_tone";
+export const DEFAULT_RECAP_TONE: RecapTone = "brutal";
+
+export const RECAP_TONES: { id: RecapTone; label: string; description: string }[] = [
+  { id: "nice", label: "Nice", description: "Warm and encouraging, cheers everyone on." },
+  { id: "playful", label: "Playful", description: "Light teasing, good-natured banter." },
+  { id: "snarky", label: "Snarky", description: "Sarcastic ribbing, still friendly underneath." },
+  { id: "brutal", label: "Brutal", description: "Merciless roast, nobody gets off easy." },
+];
+
+const TONE_INSTRUCTIONS: Record<RecapTone, string> = {
+  nice: `Write 2-4 warm, encouraging sentences celebrating the week. Call people out by name for good picks and hype them up; if someone had a rough week, be gentle and supportive about it — find a silver lining or just note it kindly without piling on. This is a wholesome group of friends cheering each other on.`,
+  playful: `Write 2-4 lighthearted, joking sentences. Call people out by name and have fun with it — a little ribbing for bad picks, a little bragging-rights tease for good ones — but keep it good-natured, like friends who like each other. Nothing mean-spirited; the vibe is banter, not a roast.`,
+  snarky: `Write 2-4 sentences with a snarky, sarcastic edge. Call people out by name — tease bad picks pretty hard and undercut good ones with a joke — but stay playful about it overall; this is ribbing between friends, not a genuine attack.`,
+  brutal: `Write 2-4 sentences absolutely torching whoever deserves it. Call people out by name and go hard — question their judgment, their football knowledge, their life choices for making the pick. Bad losses and blown-out unders should get mocked without restraint, not gently teased. Even a "good" result should get undercut somehow — a backhanded insult, a reason it doesn't actually matter, whatever. Nobody gets a genuine compliment and nobody gets off easy. Full send: sarcastic, savage, a little cruel — these are close friends who can take it, this isn't customer-facing copy, so do not soften it, hedge it, or add a caring/wholesome coda at the end.`,
+};
+
+function buildSystemPrompt(tone: RecapTone): string {
+  return `You write a short group-text recap for 5 close friends in a season-long NFL prediction pool. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted (team, side) picks that played games this week, with the result and each team's current record.
+
+${TONE_INSTRUCTIONS[tone]} Skip unremarkable picks if space is tight; spend the words on whoever's result mattered most. No hashtags, no markdown, no emoji beyond an occasional 🏈. Keep the whole thing under 320 characters so it reads well as one text message.`;
+}
+
+export async function getRecapTone(): Promise<RecapTone> {
+  const db = createServiceRoleClient();
+  const { data } = await db
+    .from("app_settings")
+    .select("value")
+    .eq("key", RECAP_TONE_KEY)
+    .maybeSingle();
+  const value = data?.value;
+  return RECAP_TONES.some((t) => t.id === value) ? (value as RecapTone) : DEFAULT_RECAP_TONE;
+}
+
+export async function setRecapTone(tone: RecapTone): Promise<void> {
+  const db = createServiceRoleClient();
+  await db.from("app_settings").upsert({ key: RECAP_TONE_KEY, value: tone }, { onConflict: "key" });
+}
 
 /**
  * Asks Claude to write the weekly recap text from that week's drafted-team
@@ -82,12 +119,13 @@ export async function generateWeeklyRecapMessage(week: number): Promise<string |
     const results = await gatherWeekData(week);
     if (results.length === 0) return null;
 
+    const tone = await getRecapTone();
     const client = new Anthropic();
     const response = await client.messages.create({
       model: "claude-opus-5",
       max_tokens: 300,
       output_config: { effort: "low" },
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(tone),
       messages: [
         { role: "user", content: `Week ${week} drafted-team results:\n${JSON.stringify(results, null, 2)}` },
       ],
