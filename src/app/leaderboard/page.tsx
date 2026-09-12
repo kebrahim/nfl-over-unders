@@ -108,7 +108,7 @@ export default async function LeaderboardPage() {
         Draft points + division bonus points. Updates as games go final.
       </p>
 
-      <div className="mt-8 overflow-hidden rounded-lg border border-border bg-surface">
+      <div className="mt-8 overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full text-sm">
           <thead className="bg-surface-2 text-left">
             <tr>
@@ -179,7 +179,7 @@ export default async function LeaderboardPage() {
           );
           const divisionPicks = divisionPicksByUser.get(row.user_id);
           return (
-            <div key={row.user_id} className="overflow-hidden rounded-lg border border-border bg-surface">
+            <div key={row.user_id} className="overflow-x-auto rounded-lg border border-border bg-surface">
               <div className="flex items-center justify-between border-b border-border bg-surface-2 px-4 py-2">
                 <p className="font-heading font-semibold tracking-wide uppercase">
                   {row.display_name}

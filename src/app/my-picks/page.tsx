@@ -156,7 +156,7 @@ export default async function MyPicksPage() {
           </div>
         )}
 
-        <div className="mt-6 overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-surface">
           <table className="w-full text-sm">
             <thead className="bg-surface-2 text-left">
               <tr>

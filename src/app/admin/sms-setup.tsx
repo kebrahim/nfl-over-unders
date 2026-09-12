@@ -129,7 +129,7 @@ export function SmsSetup({
 
       <div className="space-y-2">
         <p className={sectionLabelClass}>Message tests</p>
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-2">
