@@ -5,7 +5,7 @@ import { fromEspnCode } from "@/lib/domain/espn";
 import { computeNflWeek } from "@/lib/domain/season";
 import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
 import { sendGroupText } from "@/lib/notify/sms";
-import { generateWeeklyRecapMessage } from "@/lib/notify/weekly-recap";
+import { generateUpcomingPreviewMessage, generateWeeklyRecapMessage, getUpcomingWeekFirstKickoff } from "@/lib/notify/weekly-recap";
 
 // Pulls current scores from ESPN's public (unofficial, undocumented but
 // widely relied on) scoreboard endpoint and upserts them into `games`.
@@ -15,15 +15,16 @@ import { generateWeeklyRecapMessage } from "@/lib/notify/weekly-recap";
 //     fires twice daily (13:00 and 14:00 UTC, covering 9am EDT and 9am
 //     EST); isNineAmEastern() below picks out whichever one is actually
 //     9am America/New_York right now and no-ops the other, so the sync
-//     (and the weekly recap text it can trigger) always lands at 9am
-//     local time year-round without a manual schedule flip at the DST
-//     changeover.
+//     (and the weekly recap/preview texts it can trigger) always land
+//     at 9am local time year-round without a manual schedule flip at
+//     the DST changeover.
 //   - POST, with a signed-in commissioner session — the "Sync scores now"
 //     button on /admin. Not subject to the 9am gate.
 const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 const MIN_WEEK = 1;
 const MAX_WEEK = 18;
 const LAST_WEEKLY_SUMMARY_KEY = "last_weekly_summary_week";
+const LAST_WEEKLY_PREVIEW_KEY = "last_weekly_preview_week";
 
 interface EspnCompetitor {
   homeAway: "home" | "away";
@@ -141,6 +142,7 @@ async function performSync() {
   if (error) throw new Error(error.message);
 
   await maybeSendWeeklySummary(db);
+  await maybeSendWeeklyPreview(db);
 
   return { synced: games.length, rawEvents: events.length };
 }
@@ -203,6 +205,41 @@ async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleCli
   await db
     .from("app_settings")
     .upsert({ key: LAST_WEEKLY_SUMMARY_KEY, value: String(completeThroughWeek) }, { onConflict: "key" });
+}
+
+/**
+ * Sends the Claude-written preview of the upcoming week's drafted-team
+ * matchups on that week's first game day (its earliest kickoff, by
+ * America/New_York calendar date — not UTC, since a Thursday-night
+ * kickoff at 8:20pm ET is already Friday in UTC). Runs once a day
+ * alongside the score sync, so it fires same-day the first time that
+ * date is reached; app_settings tracks the last previewed week so it
+ * only sends once per week even though this check runs daily.
+ */
+async function maybeSendWeeklyPreview(db: ReturnType<typeof createServiceRoleClient>) {
+  const upcoming = await getUpcomingWeekFirstKickoff();
+  if (!upcoming) return;
+
+  const easternDate = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
+  if (easternDate(new Date()) !== easternDate(upcoming.firstKickoff)) return;
+
+  const { data: setting } = await db
+    .from("app_settings")
+    .select("value")
+    .eq("key", LAST_WEEKLY_PREVIEW_KEY)
+    .maybeSingle();
+  const lastPreviewedWeek = setting?.value ? Number(setting.value) : 0;
+  if (upcoming.week <= lastPreviewedWeek) return;
+
+  const preview = await generateUpcomingPreviewMessage();
+  if (preview) {
+    await sendGroupText(preview);
+  }
+
+  await db
+    .from("app_settings")
+    .upsert({ key: LAST_WEEKLY_PREVIEW_KEY, value: String(upcoming.week) }, { onConflict: "key" });
 }
 
 function isCronRequest(request: Request): boolean {

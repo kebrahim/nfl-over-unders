@@ -178,6 +178,24 @@ async function findUpcomingWeek(db: ReturnType<typeof createServiceRoleClient>):
   return upcomingWeeks.length > 0 ? Math.min(...upcomingWeeks) : null;
 }
 
+/**
+ * The upcoming week's number and its earliest kickoff time — used to
+ * fire the preview text on that week's first game day. Returns null if
+ * there's no upcoming week, or its games haven't synced any kickoff
+ * times yet.
+ */
+export async function getUpcomingWeekFirstKickoff(): Promise<{ week: number; firstKickoff: Date } | null> {
+  const db = createServiceRoleClient();
+  const week = await findUpcomingWeek(db);
+  if (week == null) return null;
+
+  const { data: games } = await db.from("games").select("kickoff_utc").eq("week", week);
+  if (!games || games.length === 0) return null;
+
+  const kickoffs = games.map((g) => new Date(g.kickoff_utc).getTime());
+  return { week, firstKickoff: new Date(Math.min(...kickoffs)) };
+}
+
 async function gatherUpcomingWeekData(week: number): Promise<UpcomingPick[]> {
   const db = createServiceRoleClient();
 
