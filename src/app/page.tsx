@@ -1,4 +1,78 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/supabase/current-user";
+import { demoOverallLeaderboard } from "@/lib/demo/data";
+import { DIVISION_PICKS_LOCK_AT } from "@/lib/domain/season";
+
+export const dynamic = "force-dynamic";
+
+interface SeasonBanner {
+  headline: string;
+  detail?: string;
+}
+
+async function getSeasonBanner(): Promise<SeasonBanner | null> {
+  const profile = await getCurrentProfile();
+  if (!profile) return null;
+
+  if (profile.is_demo) {
+    const leader = [...demoOverallLeaderboard()].sort((a, b) => b.total_points - a.total_points)[0];
+    return leader
+      ? {
+          headline: `🏆 Season complete! ${leader.display_name} wins with ${leader.total_points} points`,
+          detail: "Demo data — sign in with a real account to see your own league's standings.",
+        }
+      : null;
+  }
+
+  const supabase = await createClient();
+  const [{ data: session }, { data: games }, { data: leaderboard }] = await Promise.all([
+    supabase
+      .from("draft_sessions")
+      .select("status")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("games").select("week, status"),
+    supabase
+      .from("overall_leaderboard")
+      .select("display_name, total_points")
+      .order("total_points", { ascending: false })
+      .limit(1),
+  ]);
+
+  if (session?.status === "active") {
+    return { headline: "The draft is live", detail: "Head to the draft to see the current pick." };
+  }
+  if (session?.status !== "completed") {
+    return null;
+  }
+
+  const leader = leaderboard?.[0];
+  if (!games || games.length === 0) {
+    return {
+      headline: "Draft's complete — season kicks off soon",
+      detail: `Kickoff: ${new Date(DIVISION_PICKS_LOCK_AT).toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        dateStyle: "medium",
+        timeStyle: "short",
+      })} ET`,
+    };
+  }
+
+  const nonFinalWeeks = games.filter((g) => g.status !== "final").map((g) => g.week);
+  if (nonFinalWeeks.length === 0) {
+    return leader
+      ? { headline: `🏆 Season complete! ${leader.display_name} wins with ${leader.total_points} points` }
+      : null;
+  }
+
+  const currentWeek = Math.min(...nonFinalWeeks);
+  return {
+    headline: `Week ${currentWeek} is underway`,
+    detail: leader ? `${leader.display_name} leads with ${leader.total_points} points` : undefined,
+  };
+}
 
 const STEPS = [
   {
@@ -19,7 +93,9 @@ const STEPS = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const seasonBanner = await getSeasonBanner();
+
   return (
     <main className="flex flex-1 flex-col items-center">
       <div className="flex w-full max-w-3xl flex-1 flex-col items-center gap-12 px-6 py-24 text-center">
@@ -32,6 +108,17 @@ export default function Home() {
             over/unders, then see who calls it best.
           </p>
         </div>
+
+        {seasonBanner && (
+          <div className="w-full rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-left">
+            <p className="font-heading font-semibold tracking-wide text-accent uppercase">
+              {seasonBanner.headline}
+            </p>
+            {seasonBanner.detail && (
+              <p className="mt-1 text-sm text-ink-muted">{seasonBanner.detail}</p>
+            )}
+          </div>
+        )}
 
         <div className="grid w-full gap-4 text-left sm:grid-cols-2">
           {STEPS.map((step) => (
