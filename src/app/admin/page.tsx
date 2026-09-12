@@ -16,6 +16,17 @@ import { TeamLogo } from "@/components/team-logo";
 
 export const dynamic = "force-dynamic";
 
+const MESSAGE_KIND_LABELS: Record<string, string> = {
+  recap: "Recap",
+  recap_fallback: "Recap (fallback)",
+  preview: "Preview",
+  connectivity_test: "Connectivity test",
+};
+
+function formatMessageKind(kind: string): string {
+  return MESSAGE_KIND_LABELS[kind] ?? kind;
+}
+
 export default async function AdminPage() {
   const profile = await getCurrentProfile();
   if (!profile?.is_commissioner) {
@@ -36,6 +47,7 @@ export default async function AdminPage() {
     { data: divisionPredictions },
     { data: tiebreakers },
     { data: allDraftPicks },
+    { data: sentMessages },
   ] = await Promise.all([
     supabase
       .from("teams")
@@ -61,6 +73,11 @@ export default async function AdminPage() {
     supabase.from("division_predictions").select("user_id, division, predicted_team_id"),
     supabase.from("tiebreaker_predictions").select("user_id, points_guess"),
     supabase.from("draft_picks").select("user_id, team_id, side, pick_number"),
+    supabase
+      .from("sent_messages")
+      .select("id, kind, target, message, sent_at")
+      .order("sent_at", { ascending: false })
+      .limit(20),
   ]);
 
   const smsConversationSid = await getSmsConversationSid();
@@ -144,6 +161,38 @@ export default async function AdminPage() {
         description="Controls how Claude writes both the weekly recap and the upcoming-week preview texts sent to the group thread."
       >
         <RecapToneForm current={recapTone} />
+      </AdminSection>
+
+      <AdminSection
+        title="Message log"
+        description="Last 20 texts sent — recap, preview, and connectivity tests — since there's otherwise no record besides someone's actual phone."
+      >
+        {sentMessages && sentMessages.length > 0 ? (
+          <ul className="space-y-3">
+            {sentMessages.map((m) => (
+              <li key={m.id} className="rounded-lg border border-border bg-surface-2 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+                  <span className="font-semibold tracking-wide text-ink uppercase">
+                    {formatMessageKind(m.kind)}
+                  </span>
+                  <span>→ {m.target === "self" ? "me" : "group"}</span>
+                  <span>·</span>
+                  <span>
+                    {new Date(m.sent_at).toLocaleString("en-US", {
+                      timeZone: "America/New_York",
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    ET
+                  </span>
+                </div>
+                <p className="mt-1.5 whitespace-pre-line text-ink">{m.message}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-ink-muted">No texts sent yet.</p>
+        )}
       </AdminSection>
 
       <AdminSection title="Draft" description={`Status: ${session?.status ?? "not started"}`}>

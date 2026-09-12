@@ -30,6 +30,7 @@ export async function POST() {
 
   const result = await sendGroupText(
     "This is a test message to the group thread. If everyone got this, it's working!",
+    "connectivity_test",
   );
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });

@@ -187,7 +187,7 @@ async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleCli
 
   const recap = await generateWeeklyRecapMessage(completeThroughWeek);
   if (recap) {
-    await sendGroupText(recap);
+    await sendGroupText(recap, "recap");
   } else {
     const { data: leaguePoints } = await db
       .from("league_total_points")
@@ -198,6 +198,7 @@ async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleCli
       const paceText = pace != null ? ` On pace for ${Math.round(pace)} across all ${TOTAL_REGULAR_SEASON_GAMES} games.` : "";
       await sendGroupText(
         `Week ${completeThroughWeek} is in the books! League has scored ${leaguePoints.total_points} points so far.${paceText} Check standings: gridiron.zebrahim.com/standings`,
+        "recap_fallback",
       );
     }
   }
@@ -234,7 +235,7 @@ async function maybeSendWeeklyPreview(db: ReturnType<typeof createServiceRoleCli
 
   const preview = await generateUpcomingPreviewMessage();
   if (preview) {
-    await sendGroupText(preview);
+    await sendGroupText(preview, "preview");
   }
 
   await db

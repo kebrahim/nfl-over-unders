@@ -27,12 +27,29 @@ function twilioAuthHeader(): string | null {
 export type SendResult = { ok: true } | { ok: false; error: string };
 
 /**
+ * Records a sent text in the audit trail (sent_messages), so /admin can
+ * show a history of what's gone out instead of relying on someone's
+ * actual phone. Best-effort — a logging failure should never surface as
+ * a send failure to the caller.
+ */
+async function logSentMessage(kind: string, target: "self" | "group", message: string): Promise<void> {
+  try {
+    const db = createServiceRoleClient();
+    await db.from("sent_messages").insert({ kind, target, message });
+  } catch (err) {
+    console.error("logSentMessage error:", err);
+  }
+}
+
+/**
  * Posts a message into the group MMS thread, if one's been set up.
  * Never throws — a notification failure should never break the draft
  * pick or score sync it's attached to — but callers that do care (e.g.
- * an admin test button) can inspect the returned result.
+ * an admin test button) can inspect the returned result. `kind` is a
+ * short label (e.g. "recap", "preview", "connectivity_test") recorded
+ * in the sent-messages audit trail.
  */
-export async function sendGroupText(message: string): Promise<SendResult> {
+export async function sendGroupText(message: string, kind: string = "group"): Promise<SendResult> {
   const auth = twilioAuthHeader();
   if (!auth) return { ok: false, error: "Twilio isn't configured." };
 
@@ -62,6 +79,7 @@ export async function sendGroupText(message: string): Promise<SendResult> {
       console.error("Twilio sendGroupText failed:", res.status, text);
       return { ok: false, error: text };
     }
+    await logSentMessage(kind, "group", message);
     return { ok: true };
   } catch (err) {
     console.error("Twilio sendGroupText error:", err);
@@ -74,8 +92,9 @@ export async function sendGroupText(message: string): Promise<SendResult> {
  * API (not the group Conversation) — e.g. sending a generated recap/
  * preview to just the admin's own number to preview it before it goes
  * to everyone. Never throws; same SendResult contract as sendGroupText.
+ * `kind` is recorded in the sent-messages audit trail, same as above.
  */
-export async function sendDirectText(to: string, message: string): Promise<SendResult> {
+export async function sendDirectText(to: string, message: string, kind: string = "direct"): Promise<SendResult> {
   const auth = twilioAuthHeader();
   if (!auth) return { ok: false, error: "Twilio isn't configured." };
 
@@ -98,6 +117,7 @@ export async function sendDirectText(to: string, message: string): Promise<SendR
       console.error("Twilio sendDirectText failed:", res.status, text);
       return { ok: false, error: text };
     }
+    await logSentMessage(kind, "self", message);
     return { ok: true };
   } catch (err) {
     console.error("Twilio sendDirectText error:", err);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendDirectText } from "@/lib/notify/sms";
 
 export async function POST() {
   const supabase = await createClient();
@@ -25,36 +26,18 @@ export async function POST() {
     );
   }
 
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-  if (!accountSid || !authToken || !fromNumber) {
-    return NextResponse.json(
-      { error: "Twilio isn't configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER." },
-      { status: 500 },
-    );
-  }
-
   // Plain Messages API, not Conversations — a one-off 1:1 text to just
   // yourself, so you can confirm credentials/number work before every
   // participant has a phone number on file (Conversations setup requires
   // all 5).
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      To: profile.phone,
-      From: fromNumber,
-      Body: "🏈 Gridiron: this is a test text. If you got this, Twilio's wired up correctly.",
-    }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return NextResponse.json({ error: body.message ?? `Twilio error (${res.status}).` }, { status: 500 });
+  const result = await sendDirectText(
+    profile.phone,
+    "this is a test text. If you got this, Twilio's wired up correctly.",
+    "connectivity_test",
+  );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  return NextResponse.json({ sid: body.sid });
+  return NextResponse.json({ ok: true });
 }

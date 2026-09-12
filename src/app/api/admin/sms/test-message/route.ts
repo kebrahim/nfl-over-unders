@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const result = await sendDirectText(profile.phone, message);
+    const result = await sendDirectText(profile.phone, message, kind);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 });
   } else {
     const conversationSid = await getSmsConversationSid();
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const result = await sendGroupText(message);
+    const result = await sendGroupText(message, kind);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 });
   }
 

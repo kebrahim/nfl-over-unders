@@ -169,6 +169,23 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["app_settings"]["Row"]>;
         Relationships: [];
       };
+      sent_messages: {
+        Row: {
+          id: number;
+          kind: string;
+          target: "self" | "group";
+          week: number | null;
+          message: string;
+          sent_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["sent_messages"]["Row"]> & {
+          kind: string;
+          target: "self" | "group";
+          message: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["sent_messages"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       team_records: {
