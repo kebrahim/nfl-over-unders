@@ -139,13 +139,18 @@ export async function generateWeeklyRecapMessage(week: number): Promise<string |
     const client = new Anthropic();
     const response = await client.messages.create({
       model: "claude-opus-5",
-      max_tokens: 300,
+      max_tokens: 1024,
       output_config: { effort: "low" },
       system: buildRecapSystemPrompt(tone),
       messages: [
         { role: "user", content: `Week ${week} drafted-team results:\n${JSON.stringify(results, null, 2)}` },
       ],
     });
+
+    if (response.stop_reason === "max_tokens") {
+      console.error("generateWeeklyRecapMessage: response truncated at max_tokens");
+      return null;
+    }
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
     const body = textBlock?.text.trim();
@@ -280,13 +285,18 @@ export async function generateUpcomingPreviewMessage(): Promise<string | null> {
     const client = new Anthropic();
     const response = await client.messages.create({
       model: "claude-opus-5",
-      max_tokens: 300,
+      max_tokens: 1024,
       output_config: { effort: "low" },
       system: buildPreviewSystemPrompt(tone),
       messages: [
         { role: "user", content: `Week ${week} upcoming drafted-team matchups:\n${JSON.stringify(picks, null, 2)}` },
       ],
     });
+
+    if (response.stop_reason === "max_tokens") {
+      console.error("generateUpcomingPreviewMessage: response truncated at max_tokens");
+      return null;
+    }
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
     const body = textBlock?.text.trim();
