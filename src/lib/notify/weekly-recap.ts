@@ -88,7 +88,9 @@ const RECAP_TONE_INSTRUCTIONS: Record<RecapTone, string> = {
 function buildRecapSystemPrompt(tone: RecapTone): string {
   return `You write a short group-text recap for 5 close friends in a season-long NFL prediction pool. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted (team, side) picks that played games this week, with the result and each team's current record.
 
-${RECAP_TONE_INSTRUCTIONS[tone]} Skip unremarkable picks if space is tight; spend the words on whoever's result mattered most. No hashtags, no markdown, no emoji beyond an occasional 🏈. Keep the whole thing under 320 characters so it reads well as one text message.`;
+${RECAP_TONE_INSTRUCTIONS[tone]}
+
+Format: one bullet point per matchup worth calling out (2-4 bullets), each starting with "• " on its own line — real line breaks between bullets, not run together in one paragraph. Skip unremarkable picks if space is tight; spend the bullets on whoever's result mattered most. Keep each bullet to one short sentence. Don't include a title or header line — that's added separately. No hashtags, no markdown besides the bullet character, no emoji beyond an occasional 🏈.`;
 }
 
 export async function getRecapTone(): Promise<RecapTone> {
@@ -132,7 +134,8 @@ export async function generateWeeklyRecapMessage(week: number): Promise<string |
     });
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
-    return textBlock?.text.trim() || null;
+    const body = textBlock?.text.trim();
+    return body ? `Week ${week} Recap\n${body}` : null;
   } catch (err) {
     console.error("generateWeeklyRecapMessage error:", err);
     return null;
@@ -219,7 +222,9 @@ const PREVIEW_TONE_INSTRUCTIONS: Record<RecapTone, string> = {
 function buildPreviewSystemPrompt(tone: RecapTone): string {
   return `You write a short group-text preview for 5 close friends in a season-long NFL prediction pool, previewing the upcoming week's games before they're played. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted teams' matchups this week, with each team's current record and win-total line.
 
-${PREVIEW_TONE_INSTRUCTIONS[tone]} Call out any matchup where two drafted teams play each other especially — that's a direct pool-vs-pool showdown. Skip unremarkable matchups if space is tight. No hashtags, no markdown, no emoji beyond an occasional 🏈. Keep the whole thing under 320 characters so it reads well as one text message.`;
+${PREVIEW_TONE_INSTRUCTIONS[tone]}
+
+Format: one bullet point per matchup worth calling out (2-4 bullets), each starting with "• " on its own line — real line breaks between bullets, not run together in one paragraph. Call out any matchup where two drafted teams play each other especially — that's a direct pool-vs-pool showdown. Skip unremarkable matchups if space is tight. Keep each bullet to one short sentence. Don't include a title or header line — that's added separately. No hashtags, no markdown besides the bullet character, no emoji beyond an occasional 🏈.`;
 }
 
 /**
@@ -252,7 +257,8 @@ export async function generateUpcomingPreviewMessage(): Promise<string | null> {
     });
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
-    return textBlock?.text.trim() || null;
+    const body = textBlock?.text.trim();
+    return body ? `Week ${week} Preview\n${body}` : null;
   } catch (err) {
     console.error("generateUpcomingPreviewMessage error:", err);
     return null;
