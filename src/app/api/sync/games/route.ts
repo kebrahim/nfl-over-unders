@@ -11,9 +11,15 @@ import { generateWeeklyRecapMessage } from "@/lib/notify/weekly-recap";
 // widely relied on) scoreboard endpoint and upserts them into `games`.
 // Two ways to trigger it:
 //   - GET, with `Authorization: Bearer $CRON_SECRET` — Vercel Cron (see
-//     vercel.json). Vercel always calls cron routes with GET.
+//     vercel.json). Vercel always calls cron routes with GET. vercel.json
+//     fires twice daily (13:00 and 14:00 UTC, covering 9am EDT and 9am
+//     EST); isNineAmEastern() below picks out whichever one is actually
+//     9am America/New_York right now and no-ops the other, so the sync
+//     (and the weekly recap text it can trigger) always lands at 9am
+//     local time year-round without a manual schedule flip at the DST
+//     changeover.
 //   - POST, with a signed-in commissioner session — the "Sync scores now"
-//     button on /admin.
+//     button on /admin. Not subject to the 9am gate.
 const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 const MIN_WEEK = 1;
 const MAX_WEEK = 18;
@@ -199,9 +205,28 @@ async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleCli
     .upsert({ key: LAST_WEEKLY_SUMMARY_KEY, value: String(completeThroughWeek) }, { onConflict: "key" });
 }
 
-async function requireAuthorized(request: Request): Promise<NextResponse | null> {
+function isCronRequest(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`) {
+  return !!process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`;
+}
+
+// Vercel Cron schedules are fixed UTC with no timezone/DST awareness, so
+// vercel.json fires this route at both 13:00 and 14:00 UTC (the two
+// possible UTC times for 9am America/New_York, depending on EDT vs EST).
+// Checking the live local hour here — rather than hardcoding a UTC
+// offset — means the "actual" 9am run picks itself out correctly across
+// the DST changeover with no manual schedule flip required.
+function isNineAmEastern(): boolean {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    hour12: false,
+  }).format(new Date());
+  return Number(hour) === 9;
+}
+
+async function requireAuthorized(request: Request): Promise<NextResponse | null> {
+  if (isCronRequest(request)) {
     return null;
   }
 
@@ -241,6 +266,9 @@ async function handle(request: Request) {
 }
 
 export async function GET(request: Request) {
+  if (isCronRequest(request) && !isNineAmEastern()) {
+    return NextResponse.json({ skipped: true, reason: "not 9am America/New_York yet" });
+  }
   return handle(request);
 }
 
