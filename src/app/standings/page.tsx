@@ -136,7 +136,7 @@ export default async function StandingsPage() {
                                 >
                                   {onPace === "push"
                                     ? "on the line"
-                                    : `on pace: ${projected.toFixed(1)} (${onPace})`}
+                                    : `on pace: ${Math.round(projected)} (${onPace})`}
                                 </span>
                               ) : (
                                 line != null && <span className="text-ink-muted">—</span>
