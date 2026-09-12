@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { TeamLogo } from "@/components/team-logo";
 import { DIVISIONS } from "@/lib/domain/divisions";
-import { divisionPicksLocked } from "@/lib/domain/season";
+import { divisionPicksLocked, teamsPlayingCurrentWeek } from "@/lib/domain/season";
 import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
 import {
   DEMO_DIVISION_PREDICTIONS,
@@ -39,6 +39,7 @@ export default async function LeaderboardPage() {
   let pickScores: PickScore[];
   let teams: Team[];
   let divisionPredictions: DivisionPrediction[];
+  let teamsOnByeThisWeek: Set<number> | null;
 
   const picksAreVisible = profile?.is_demo || divisionPicksLocked() || !!profile?.is_commissioner;
 
@@ -49,6 +50,7 @@ export default async function LeaderboardPage() {
     pickScores = demoDraftPickScores();
     teams = DEMO_TEAMS;
     divisionPredictions = DEMO_DIVISION_PREDICTIONS;
+    teamsOnByeThisWeek = null;
   } else {
     const supabase = await createClient();
     const [
@@ -58,6 +60,7 @@ export default async function LeaderboardPage() {
       { data: fetchedPickScores },
       { data: fetchedTeams },
       { data: fetchedDivisionPredictions },
+      { data: fetchedGames },
     ] = await Promise.all([
       supabase
         .from("overall_leaderboard")
@@ -73,6 +76,7 @@ export default async function LeaderboardPage() {
       // RLS decides what's actually visible here: your own row always,
       // everyone's once picks lock, or always if you're commissioner.
       supabase.from("division_predictions").select("user_id, division, predicted_team_id"),
+      supabase.from("games").select("week, status, home_team_id, away_team_id"),
     ]);
     rows = leaderboard ?? [];
     guessByUser = new Map((tiebreakers ?? []).map((t) => [t.user_id, t.points_guess]));
@@ -80,6 +84,10 @@ export default async function LeaderboardPage() {
     pickScores = fetchedPickScores ?? [];
     teams = fetchedTeams ?? [];
     divisionPredictions = (fetchedDivisionPredictions ?? []) as DivisionPrediction[];
+    const playingThisWeek = teamsPlayingCurrentWeek(fetchedGames ?? []);
+    teamsOnByeThisWeek = playingThisWeek
+      ? new Set(teams.map((t) => t.id).filter((id) => !playingThisWeek.has(id)))
+      : null;
   }
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
@@ -201,12 +209,18 @@ export default async function LeaderboardPage() {
                 <tbody>
                   {picks.map((pick) => {
                     const team = teamById.get(pick.team_id);
+                    const onBye = teamsOnByeThisWeek?.has(pick.team_id) ?? false;
                     return (
                       <tr key={pick.pick_id} className="border-t border-border">
                         <td className="px-4 py-1.5 font-medium">
                           <div className="flex items-center gap-2">
                             {team && <TeamLogo code={team.code} name={team.name} size={18} />}
                             {team?.name ?? pick.team_id}
+                            {onBye && (
+                              <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
+                                Bye
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-1.5 capitalize">{pick.side}</td>

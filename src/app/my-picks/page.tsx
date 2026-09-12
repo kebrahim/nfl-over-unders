@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import type { Division } from "@/lib/supabase/types";
-import { divisionPicksLocked, DIVISION_PICKS_LOCK_AT } from "@/lib/domain/season";
+import { divisionPicksLocked, DIVISION_PICKS_LOCK_AT, teamsPlayingCurrentWeek } from "@/lib/domain/season";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import {
   DEMO_DIVISION_PREDICTIONS,
@@ -49,6 +49,7 @@ export default async function MyPicksPage() {
   let tiebreakerGuess: number | null;
   let players: { id: string; display_name: string }[];
   let allDivisionPicks: { user_id: string; division: Division; predicted_team_id: number }[];
+  let teamsOnByeThisWeek: Set<number> | null;
 
   if (isDemo) {
     pickScores = demoDraftPickScores(DEMO_VIEWER_ID);
@@ -62,6 +63,7 @@ export default async function MyPicksPage() {
     tiebreakerGuess = DEMO_TIEBREAKER_PREDICTIONS[DEMO_VIEWER_ID] ?? null;
     players = DEMO_PLAYERS;
     allDivisionPicks = DEMO_DIVISION_PREDICTIONS;
+    teamsOnByeThisWeek = null;
   } else {
     const supabase = await createClient();
     const [
@@ -70,6 +72,7 @@ export default async function MyPicksPage() {
       { data: divisionPredictions },
       { data: tiebreaker },
       { data: fetchedPlayers },
+      { data: fetchedGames },
     ] = await Promise.all([
       supabase
         .from("draft_pick_scores")
@@ -87,6 +90,7 @@ export default async function MyPicksPage() {
         .eq("user_id", profile.id)
         .maybeSingle(),
       supabase.from("profiles").select("id, display_name").eq("is_demo", false).order("display_name"),
+      supabase.from("games").select("week, status, home_team_id, away_team_id"),
     ]);
     pickScores = fetchedPickScores ?? [];
     teams = fetchedTeams ?? [];
@@ -96,6 +100,10 @@ export default async function MyPicksPage() {
     );
     tiebreakerGuess = tiebreaker?.points_guess ?? null;
     players = fetchedPlayers ?? [];
+    const playingThisWeek = teamsPlayingCurrentWeek(fetchedGames ?? []);
+    teamsOnByeThisWeek = playingThisWeek
+      ? new Set(teams.map((t) => t.id).filter((id) => !playingThisWeek.has(id)))
+      : null;
   }
 
   const teamById = new Map(teams.map((t) => [t.id, t]));
@@ -170,12 +178,18 @@ export default async function MyPicksPage() {
             <tbody>
               {pickScores.map((pick) => {
                 const team = teamById.get(pick.team_id);
+                const onBye = teamsOnByeThisWeek?.has(pick.team_id) ?? false;
                 return (
                   <tr key={pick.pick_id} className="border-t border-border">
                     <td className="px-4 py-2 font-medium">
                       <div className="flex items-center gap-2">
                         {team && <TeamLogo code={team.code} name={team.name} size={20} />}
                         {team?.name ?? pick.team_id}
+                        {onBye && (
+                          <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
+                            Bye
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-2 capitalize">{pick.side}</td>

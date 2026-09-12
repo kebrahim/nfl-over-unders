@@ -37,3 +37,31 @@ export function computeNflWeek(kickoffIso: string): number {
   const dayDiff = Math.round((kickoffMs - startMs) / (24 * 60 * 60 * 1000));
   return Math.floor(dayDiff / 7) + 1;
 }
+
+interface GameWeekAndTeams {
+  week: number;
+  status: string;
+  home_team_id: number;
+  away_team_id: number;
+}
+
+/**
+ * Team IDs playing in the current week (the earliest week with any
+ * not-yet-final game) — used to flag a drafted team as on a bye this
+ * week. Returns null if there's no current week to determine (no
+ * games synced yet, or the season's fully over).
+ */
+export function teamsPlayingCurrentWeek(games: GameWeekAndTeams[]): Set<number> | null {
+  const nonFinalWeeks = games.filter((g) => g.status !== "final").map((g) => g.week);
+  if (nonFinalWeeks.length === 0) return null;
+
+  const currentWeek = Math.min(...nonFinalWeeks);
+  const teamIds = new Set<number>();
+  for (const g of games) {
+    if (g.week === currentWeek) {
+      teamIds.add(g.home_team_id);
+      teamIds.add(g.away_team_id);
+    }
+  }
+  return teamIds;
+}
