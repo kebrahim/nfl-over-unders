@@ -69,6 +69,20 @@ export function SmsSetup({
     setResult("Test message sent to the group thread — check everyone's phone.");
   }
 
+  async function sendRecapPreview() {
+    setPending(true);
+    setError(null);
+    setResult(null);
+    const res = await fetch("/api/admin/sms/test-preview", { method: "POST" });
+    const body = await res.json();
+    setPending(false);
+    if (!res.ok) {
+      setError(body.error ?? "Something went wrong.");
+      return;
+    }
+    setResult(`Sent to the group thread: "${body.preview}"`);
+  }
+
   return (
     <div className="space-y-2">
       {missingPhoneNames.length > 0 && (
@@ -114,6 +128,16 @@ export function SmsSetup({
             className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
           >
             Send test to group thread
+          </button>
+        )}
+        {configured && (
+          <button
+            type="button"
+            onClick={sendRecapPreview}
+            disabled={pending}
+            className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+          >
+            Send Claude-generated preview
           </button>
         )}
       </div>
