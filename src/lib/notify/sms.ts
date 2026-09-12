@@ -53,7 +53,7 @@ export async function sendGroupText(message: string): Promise<SendResult> {
         // 50513 ("Message author should be among Group MMS participants").
         body: new URLSearchParams({
           Author: fromNumber,
-          Body: `🏈 Gridiron: ${message} Reply STOP to opt out.`,
+          Body: `🏈 Gridiron: ${message}\nReply STOP to opt out.`,
         }),
       },
     );
@@ -90,7 +90,7 @@ export async function sendDirectText(to: string, message: string): Promise<SendR
       body: new URLSearchParams({
         To: to,
         From: fromNumber,
-        Body: `🏈 Gridiron: ${message} Reply STOP to opt out.`,
+        Body: `🏈 Gridiron: ${message}\nReply STOP to opt out.`,
       }),
     });
     if (!res.ok) {
