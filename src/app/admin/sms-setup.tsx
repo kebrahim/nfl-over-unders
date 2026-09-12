@@ -47,32 +47,24 @@ export function SmsSetup({
     router.refresh();
   }
 
-  async function sendTest() {
+  async function sendConnectivityTest(target: "self" | "group") {
     setPending(true);
     setError(null);
     setResult(null);
-    const res = await fetch("/api/admin/sms/test", { method: "POST" });
+    const res = await fetch(target === "self" ? "/api/admin/sms/test" : "/api/admin/sms/test-group", {
+      method: "POST",
+    });
     const body = await res.json();
     setPending(false);
     if (!res.ok) {
       setError(body.error ?? "Something went wrong.");
       return;
     }
-    setResult("Test text sent to your own number — check your phone.");
-  }
-
-  async function sendGroupTest() {
-    setPending(true);
-    setError(null);
-    setResult(null);
-    const res = await fetch("/api/admin/sms/test-group", { method: "POST" });
-    const body = await res.json();
-    setPending(false);
-    if (!res.ok) {
-      setError(body.error ?? "Something went wrong.");
-      return;
-    }
-    setResult("Test message sent to the group thread — check everyone's phone.");
+    setResult(
+      target === "self"
+        ? "Test text sent to your own number — check your phone."
+        : "Test message sent to the group thread — check everyone's phone.",
+    );
   }
 
   async function sendGenerated(kind: "recap" | "preview", target: "self" | "group") {
@@ -93,6 +85,12 @@ export function SmsSetup({
     const destination = target === "self" ? "your phone" : "the group thread";
     setResult(`Sent to ${destination}:\n"${body.message}"`);
   }
+
+  const messageTestRows: { key: string; label: string; onSend: (target: "self" | "group") => void }[] = [
+    { key: "connectivity", label: "Connectivity test", onSend: sendConnectivityTest },
+    { key: "recap", label: "Recap", onSend: (target) => sendGenerated("recap", target) },
+    { key: "preview", label: "Preview", onSend: (target) => sendGenerated("preview", target) },
+  ];
 
   return (
     <div className="space-y-6">
@@ -130,21 +128,7 @@ export function SmsSetup({
       </div>
 
       <div className="space-y-2">
-        <p className={sectionLabelClass}>Connectivity tests</p>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={sendTest} disabled={pending} className={pillButtonClass}>
-            Send me a test text
-          </button>
-          {configured && (
-            <button type="button" onClick={sendGroupTest} disabled={pending} className={pillButtonClass}>
-              Send test to group thread
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <p className={sectionLabelClass}>Claude-generated message tests</p>
+        <p className={sectionLabelClass}>Message tests</p>
         <div className="overflow-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
@@ -161,18 +145,13 @@ export function SmsSetup({
               </tr>
             </thead>
             <tbody>
-              {(
-                [
-                  { kind: "recap" as const, label: "Recap" },
-                  { kind: "preview" as const, label: "Preview" },
-                ]
-              ).map((row, i) => (
-                <tr key={row.kind} className={i > 0 ? "border-t border-border" : undefined}>
+              {messageTestRows.map((row, i) => (
+                <tr key={row.key} className={i > 0 ? "border-t border-border" : undefined}>
                   <td className="px-3 py-2.5 font-medium text-ink">{row.label}</td>
                   <td className="px-3 py-2.5">
                     <button
                       type="button"
-                      onClick={() => sendGenerated(row.kind, "self")}
+                      onClick={() => row.onSend("self")}
                       disabled={pending}
                       className={cellButtonClass}
                     >
@@ -183,7 +162,7 @@ export function SmsSetup({
                     {configured ? (
                       <button
                         type="button"
-                        onClick={() => sendGenerated(row.kind, "group")}
+                        onClick={() => row.onSend("group")}
                         disabled={pending}
                         className={cellButtonClass}
                       >
