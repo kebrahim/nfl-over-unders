@@ -69,18 +69,23 @@ export function SmsSetup({
     setResult("Test message sent to the group thread — check everyone's phone.");
   }
 
-  async function sendRecapPreview() {
+  async function sendGenerated(kind: "recap" | "preview", target: "self" | "group") {
     setPending(true);
     setError(null);
     setResult(null);
-    const res = await fetch("/api/admin/sms/test-preview", { method: "POST" });
+    const res = await fetch("/api/admin/sms/test-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, target }),
+    });
     const body = await res.json();
     setPending(false);
     if (!res.ok) {
       setError(body.error ?? "Something went wrong.");
       return;
     }
-    setResult(`Sent to the group thread: "${body.preview}"`);
+    const destination = target === "self" ? "your phone" : "the group thread";
+    setResult(`Sent to ${destination}:\n"${body.message}"`);
   }
 
   return (
@@ -130,18 +135,51 @@ export function SmsSetup({
             Send test to group thread
           </button>
         )}
-        {configured && (
+      </div>
+      <div>
+        <p className="text-xs font-medium tracking-wide text-ink-muted uppercase">
+          Test Claude-generated messages
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={sendRecapPreview}
+            onClick={() => sendGenerated("recap", "self")}
             disabled={pending}
             className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
           >
-            Send Claude-generated preview
+            Recap → me
           </button>
-        )}
+          {configured && (
+            <button
+              type="button"
+              onClick={() => sendGenerated("recap", "group")}
+              disabled={pending}
+              className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+            >
+              Recap → group
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => sendGenerated("preview", "self")}
+            disabled={pending}
+            className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+          >
+            Preview → me
+          </button>
+          {configured && (
+            <button
+              type="button"
+              onClick={() => sendGenerated("preview", "group")}
+              disabled={pending}
+              className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+            >
+              Preview → group
+            </button>
+          )}
+        </div>
       </div>
-      {result && <p className="text-sm text-good">{result}</p>}
+      {result && <p className="text-sm whitespace-pre-line text-good">{result}</p>}
       {error && <p className="text-sm text-bad">{error}</p>}
       {twilioError != null && (
         <pre className="overflow-x-auto rounded-md border border-border bg-bg p-3 text-xs text-ink-muted">

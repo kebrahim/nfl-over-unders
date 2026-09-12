@@ -110,6 +110,20 @@ export async function setRecapTone(tone: RecapTone): Promise<void> {
 }
 
 /**
+ * The latest week with any final game — used by the admin test button,
+ * which (unlike the real automated recap) doesn't need the whole week to
+ * be complete, just something real to summarize.
+ */
+export async function findLatestRecapWeek(): Promise<number | null> {
+  const db = createServiceRoleClient();
+  const { data: games } = await db.from("games").select("week, status");
+  if (!games || games.length === 0) return null;
+
+  const weeksWithFinal = games.filter((g) => g.status === "final").map((g) => g.week);
+  return weeksWithFinal.length > 0 ? Math.max(...weeksWithFinal) : null;
+}
+
+/**
  * Asks Claude to write the weekly recap text from that week's drafted-team
  * results. Returns null (never throws) if data or the API call fails, so
  * the caller can fall back to a simpler templated message.

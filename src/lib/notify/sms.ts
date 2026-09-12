@@ -69,6 +69,42 @@ export async function sendGroupText(message: string): Promise<SendResult> {
   }
 }
 
+/**
+ * Posts a 1:1 message to a single phone number via the plain Messages
+ * API (not the group Conversation) — e.g. sending a generated recap/
+ * preview to just the admin's own number to preview it before it goes
+ * to everyone. Never throws; same SendResult contract as sendGroupText.
+ */
+export async function sendDirectText(to: string, message: string): Promise<SendResult> {
+  const auth = twilioAuthHeader();
+  if (!auth) return { ok: false, error: "Twilio isn't configured." };
+
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  if (!fromNumber) return { ok: false, error: "TWILIO_PHONE_NUMBER isn't set." };
+
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  try {
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      method: "POST",
+      headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        To: to,
+        From: fromNumber,
+        Body: `🏈 Gridiron: ${message} Reply STOP to opt out.`,
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Twilio sendDirectText failed:", res.status, text);
+      return { ok: false, error: text };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error("Twilio sendDirectText error:", err);
+    return { ok: false, error: String(err) };
+  }
+}
+
 const OPT_IN_MESSAGE =
   "🏈 Gridiron: You're opted in to text updates for the Gridiron NFL pool " +
   "(gridiron.zebrahim.com) — draft turn alerts, pick updates, and score notifications. " +
