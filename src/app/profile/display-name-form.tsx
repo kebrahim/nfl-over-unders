@@ -11,7 +11,7 @@ export function DisplayNameForm({ existing, locked }: { existing: string; locked
   return (
     <form action={action} className="space-y-3">
       <div className="space-y-2">
-        <label htmlFor="display_name" className="text-sm font-medium">
+        <label htmlFor="display_name" className="block text-sm font-medium">
           Display name
         </label>
         <input

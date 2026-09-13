@@ -11,7 +11,7 @@ export function PhoneForm({ existing, locked }: { existing: string | null; locke
   return (
     <form action={action} className="space-y-3">
       <div className="space-y-2">
-        <label htmlFor="phone" className="text-sm font-medium">
+        <label htmlFor="phone" className="block text-sm font-medium">
           Phone number (optional)
         </label>
         <input
