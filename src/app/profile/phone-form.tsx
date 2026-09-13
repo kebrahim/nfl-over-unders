@@ -10,7 +10,7 @@ export function PhoneForm({ existing, locked }: { existing: string | null; locke
 
   return (
     <form action={action} className="space-y-3">
-      <div className="space-y-1">
+      <div className="space-y-2">
         <label htmlFor="phone" className="text-sm font-medium">
           Phone number (optional)
         </label>
@@ -27,7 +27,14 @@ export function PhoneForm({ existing, locked }: { existing: string | null; locke
       </div>
 
       <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" name="consent" defaultChecked={false} disabled={locked} className="mt-0.5" />
+        <input
+          key={existing ?? "empty"}
+          type="checkbox"
+          name="consent"
+          defaultChecked={!!existing}
+          disabled={locked}
+          className="mt-0.5"
+        />
         <span>
           Yes, send me SMS/MMS text updates from Gridiron (gridiron.zebrahim.com) — draft turn
           alerts, pick updates, and score notifications. Message frequency varies. Message and

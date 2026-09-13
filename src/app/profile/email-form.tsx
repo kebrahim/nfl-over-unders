@@ -10,7 +10,7 @@ export function EmailForm({ existing, locked }: { existing: string; locked: bool
 
   return (
     <form action={action} className="space-y-3">
-      <div className="space-y-1">
+      <div className="space-y-2">
         <label htmlFor="email" className="text-sm font-medium">
           Email
         </label>
