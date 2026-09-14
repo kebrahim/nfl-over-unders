@@ -296,8 +296,10 @@ async function handle(request: Request) {
 
   try {
     const result = await performSync();
+    console.log("sync/games result:", JSON.stringify(result));
     return NextResponse.json(result);
   } catch (err) {
+    console.error("sync/games performSync error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Sync failed." },
       { status: 500 },
@@ -306,7 +308,10 @@ async function handle(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (isCronRequest(request) && !isNineAmEastern()) {
+  const cron = isCronRequest(request);
+  const nineAm = isNineAmEastern();
+  console.log(`sync/games GET: isCronRequest=${cron} isNineAmEastern=${nineAm} nowUTC=${new Date().toISOString()}`);
+  if (cron && !nineAm) {
     return NextResponse.json({ skipped: true, reason: "not 9am America/New_York yet" });
   }
   return handle(request);
