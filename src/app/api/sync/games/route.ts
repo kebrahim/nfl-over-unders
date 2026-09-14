@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { fromEspnCode } from "@/lib/domain/espn";
 import { computeNflWeek } from "@/lib/domain/season";
 import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
+import { recordSyncCompleted } from "@/lib/domain/sync-status";
 import { sendGroupText } from "@/lib/notify/sms";
 import { generateUpcomingPreviewMessage, generateWeeklyRecapMessage, getUpcomingWeekFirstKickoff } from "@/lib/notify/weekly-recap";
 
@@ -80,6 +81,7 @@ async function performSync() {
   const teamIdByCode = new Map((teams ?? []).map((t) => [t.code, t.id]));
 
   const events = await fetchEspnGames();
+  await recordSyncCompleted();
 
   const skipped = { badWeek: 0, noCompetitors: 0, unknownTeam: 0 };
   const sampleEvent = events[0]

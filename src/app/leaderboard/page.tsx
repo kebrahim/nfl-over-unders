@@ -4,6 +4,7 @@ import { TeamLogo } from "@/components/team-logo";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import { divisionPicksLocked, teamsPlayingCurrentWeek } from "@/lib/domain/season";
 import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
+import { getLastSyncedAt } from "@/lib/domain/sync-status";
 import {
   DEMO_DIVISION_PREDICTIONS,
   DEMO_LEAGUE_TOTAL_POINTS,
@@ -32,6 +33,7 @@ type DivisionPrediction = { user_id: string; division: Division; predicted_team_
 
 export default async function LeaderboardPage() {
   const profile = await getCurrentProfile();
+  const lastSyncedAt = profile?.is_demo ? null : await getLastSyncedAt();
 
   let rows: { user_id: string; display_name: string; draft_points: number; division_points: number; total_points: number }[];
   let guessByUser: Map<string, number>;
@@ -115,6 +117,17 @@ export default async function LeaderboardPage() {
       <p className="mt-1 text-sm text-ink-muted">
         Draft points + division bonus points. Updates as games go final.
       </p>
+      {lastSyncedAt && (
+        <p className="mt-1 text-xs text-ink-muted">
+          Scores last synced:{" "}
+          {new Date(lastSyncedAt).toLocaleString("en-US", {
+            timeZone: "America/New_York",
+            dateStyle: "medium",
+            timeStyle: "short",
+          })}{" "}
+          ET
+        </p>
+      )}
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full text-sm">

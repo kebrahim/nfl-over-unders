@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { DEMO_TEAMS, demoTeamRecords } from "@/lib/demo/data";
 import { projectedWins } from "@/lib/domain/scoring";
+import { getLastSyncedAt } from "@/lib/domain/sync-status";
 import { TeamLogo } from "@/components/team-logo";
 import type { Conference, DivisionName } from "@/lib/supabase/types";
 
@@ -12,6 +13,7 @@ const DIVISION_NAMES: DivisionName[] = ["East", "North", "South", "West"];
 
 export default async function StandingsPage() {
   const profile = await getCurrentProfile();
+  const lastSyncedAt = profile?.is_demo ? null : await getLastSyncedAt();
 
   let teams: {
     id: number;
@@ -46,6 +48,17 @@ export default async function StandingsPage() {
       <p className="mt-1 text-sm text-ink-muted">
         Live records against each team&apos;s win-total line.
       </p>
+      {lastSyncedAt && (
+        <p className="mt-1 text-xs text-ink-muted">
+          Scores last synced:{" "}
+          {new Date(lastSyncedAt).toLocaleString("en-US", {
+            timeZone: "America/New_York",
+            dateStyle: "medium",
+            timeStyle: "short",
+          })}{" "}
+          ET
+        </p>
+      )}
 
       <div className="mt-8 grid gap-8 sm:grid-cols-2">
         {CONFERENCES.map((conference) => (

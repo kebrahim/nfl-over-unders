@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { getSmsConversationSid } from "@/lib/notify/sms";
 import { getRecapTone } from "@/lib/notify/weekly-recap";
+import { getLastSyncedAt } from "@/lib/domain/sync-status";
 import type { Division } from "@/lib/supabase/types";
 import { WinTotalForm } from "./win-total-form";
 import { DivisionWinnersForm } from "./division-winners-form";
@@ -82,6 +83,7 @@ export default async function AdminPage() {
 
   const smsConversationSid = await getSmsConversationSid();
   const recapTone = await getRecapTone();
+  const lastSyncedAt = await getLastSyncedAt();
   const missingPhoneNames = (participants ?? [])
     .filter((p) => !p.phone)
     .map((p) => p.display_name);
@@ -146,6 +148,16 @@ export default async function AdminPage() {
         title="Scores"
         description="Syncs automatically once a day. Use this to pull the latest scores right now."
       >
+        <p className="mb-3 text-sm text-ink-muted">
+          Last synced:{" "}
+          {lastSyncedAt
+            ? `${new Date(lastSyncedAt).toLocaleString("en-US", {
+                timeZone: "America/New_York",
+                dateStyle: "medium",
+                timeStyle: "short",
+              })} ET`
+            : "never"}
+        </p>
         <SyncScoresButton />
       </AdminSection>
 
