@@ -141,6 +141,7 @@ export default async function AdminPage() {
           divisionPicksByUser={divisionPicksByUser}
           tiebreakerByUser={tiebreakerByUser}
           draftPicksByUser={draftPicksByUser}
+          currentUserId={profile.id}
         />
       </AdminSection>
 

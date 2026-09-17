@@ -1,4 +1,5 @@
 import { TeamLogo } from "@/components/team-logo";
+import { DeleteParticipantButton } from "./delete-participant-button";
 
 interface Participant {
   id: string;
@@ -26,11 +27,13 @@ export function Participants({
   divisionPicksByUser,
   tiebreakerByUser,
   draftPicksByUser,
+  currentUserId,
 }: {
   participants: Participant[];
   divisionPicksByUser: Map<string, DivisionPick[]>;
   tiebreakerByUser: Map<string, number>;
   draftPicksByUser: Map<string, DraftPick[]>;
+  currentUserId: string;
 }) {
   return (
     <div className="space-y-4">
@@ -43,10 +46,17 @@ export function Participants({
 
         return (
           <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
-            <p className="font-heading font-semibold tracking-wide text-accent uppercase">
-              {p.display_name}
-            </p>
-            <p className="text-sm text-ink-muted">{p.email}</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-heading font-semibold tracking-wide text-accent uppercase">
+                  {p.display_name}
+                </p>
+                <p className="text-sm text-ink-muted">{p.email}</p>
+              </div>
+              {p.id !== currentUserId && (
+                <DeleteParticipantButton userId={p.id} name={p.display_name} />
+              )}
+            </div>
             <p className="text-xs text-ink-muted">
               {p.sms_opted_out_at ? (
                 <span className="text-bad">✗ Opted out of texts (replied STOP)</span>
