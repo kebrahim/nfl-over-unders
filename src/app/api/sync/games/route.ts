@@ -52,6 +52,16 @@ function mapStatus(espnStatusName: string | undefined): "scheduled" | "live" | "
   return "live";
 }
 
+// ESPN's endpoint is unofficial and undocumented — no auth, but it sits
+// behind Akamai's bot protection, which fingerprints the TLS/HTTP2
+// handshake against the claimed User-Agent. A UA that *claims* to be a
+// full browser (Chrome/Safari) from a server that doesn't actually
+// handshake like one gets flagged and 403'd; a plain, honest non-browser
+// UA (curl, a generic script UA) reliably passes. So: no browser
+// impersonation, and retry with a couple of variants + backoff in case
+// one specific UA or edge node is (temporarily) on a blocklist.
+const ESPN_USER_AGENTS = ["curl/8.7.1", "gridiron-sync/1.0", ""];
+
 async function fetchEspnGames() {
   const now = new Date();
   const start = new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000);
@@ -65,23 +75,30 @@ async function fetchEspnGames() {
   // computing each game's week from its own kickoff date instead.
   const url = `${ESPN_SCOREBOARD_URL}?dates=${formatDate(start)}-${formatDate(end)}`;
 
-  // ESPN's endpoint is unofficial and undocumented — no auth, but it's
-  // fronted by some kind of bot/WAF protection that appears to reject
-  // requests with no User-Agent (or one that looks non-browser-like) on
-  // occasion. A real one costs nothing and may avoid that.
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    },
-  });
-  if (!res.ok) {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < ESPN_USER_AGENTS.length; attempt++) {
+    const userAgent = ESPN_USER_AGENTS[attempt];
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+    }
+
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: userAgent ? { "User-Agent": userAgent } : {},
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { events?: EspnEvent[] };
+      return data.events ?? [];
+    }
+
     const body = await res.text().catch(() => "");
-    throw new Error(`ESPN scoreboard request failed: ${res.status} ${body.slice(0, 300)}`);
+    lastError = new Error(
+      `ESPN scoreboard request failed: ${res.status} (User-Agent: ${userAgent || "(none)"}) ${body.slice(0, 300)}`,
+    );
+    // Only retry on the kind of status a bot-detection block would produce.
+    if (res.status !== 403 && res.status !== 429) break;
   }
-  const data = (await res.json()) as { events?: EspnEvent[] };
-  return data.events ?? [];
+  throw lastError ?? new Error("ESPN scoreboard request failed.");
 }
 
 async function performSync() {
