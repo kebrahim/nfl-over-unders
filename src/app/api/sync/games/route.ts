@@ -42,8 +42,25 @@ interface EspnEvent {
   }[];
 }
 
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10).replace(/-/g, "");
+function formatMonth(d: Date): string {
+  return d.toISOString().slice(0, 7).replace("-", "");
+}
+
+// As of 2026-09-15, ESPN's scoreboard endpoint stopped accepting the
+// `dates=YYYYMMDD-YYYYMMDD` range form (answers 400 "Failed to get events
+// endpoint." for every sport) — but a single day, month, or year still
+// works. Query one request per distinct calendar month covering the
+// window instead; extra games outside the exact window are harmless,
+// since performSync already filters events down by computed NFL week.
+function monthsInRange(start: Date, end: Date): string[] {
+  const months: string[] = [];
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+  while (cursor <= last) {
+    months.push(formatMonth(cursor));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return months;
 }
 
 function mapStatus(espnStatusName: string | undefined): "scheduled" | "live" | "final" {
@@ -62,18 +79,8 @@ function mapStatus(espnStatusName: string | undefined): "scheduled" | "live" | "
 // one specific UA or edge node is (temporarily) on a blocklist.
 const ESPN_USER_AGENTS = ["curl/8.7.1", "gridiron-sync/1.0", ""];
 
-async function fetchEspnGames() {
-  const now = new Date();
-  const start = new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000);
-  // Wide enough to always include at least one full upcoming NFL week
-  // (games run Thu-Mon), so scheduled matchups are visible for testing
-  // even before the season starts, not just live/recent scores.
-  const end = new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000);
-  // Not filtering by seasontype here — it isn't honored when combined
-  // with a `dates` range (confirmed: it still returned a completed
-  // preseason game). Preseason/postseason games are excluded below by
-  // computing each game's week from its own kickoff date instead.
-  const url = `${ESPN_SCOREBOARD_URL}?dates=${formatDate(start)}-${formatDate(end)}`;
+async function fetchEspnScoreboard(dates: string): Promise<EspnEvent[]> {
+  const url = `${ESPN_SCOREBOARD_URL}?dates=${dates}`;
 
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < ESPN_USER_AGENTS.length; attempt++) {
@@ -99,6 +106,22 @@ async function fetchEspnGames() {
     if (res.status !== 403 && res.status !== 429) break;
   }
   throw lastError ?? new Error("ESPN scoreboard request failed.");
+}
+
+async function fetchEspnGames() {
+  const now = new Date();
+  const start = new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000);
+  // Wide enough to always include at least one full upcoming NFL week
+  // (games run Thu-Mon), so scheduled matchups are visible for testing
+  // even before the season starts, not just live/recent scores.
+  const end = new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000);
+
+  const eventsById = new Map<string, EspnEvent>();
+  for (const month of monthsInRange(start, end)) {
+    const events = await fetchEspnScoreboard(month);
+    for (const event of events) eventsById.set(event.id, event);
+  }
+  return [...eventsById.values()];
 }
 
 async function performSync() {
