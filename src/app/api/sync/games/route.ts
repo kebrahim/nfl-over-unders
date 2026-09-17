@@ -65,9 +65,20 @@ async function fetchEspnGames() {
   // computing each game's week from its own kickoff date instead.
   const url = `${ESPN_SCOREBOARD_URL}?dates=${formatDate(start)}-${formatDate(end)}`;
 
-  const res = await fetch(url, { cache: "no-store" });
+  // ESPN's endpoint is unofficial and undocumented — no auth, but it's
+  // fronted by some kind of bot/WAF protection that appears to reject
+  // requests with no User-Agent (or one that looks non-browser-like) on
+  // occasion. A real one costs nothing and may avoid that.
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    },
+  });
   if (!res.ok) {
-    throw new Error(`ESPN scoreboard request failed: ${res.status}`);
+    const body = await res.text().catch(() => "");
+    throw new Error(`ESPN scoreboard request failed: ${res.status} ${body.slice(0, 300)}`);
   }
   const data = (await res.json()) as { events?: EspnEvent[] };
   return data.events ?? [];
@@ -212,12 +223,13 @@ async function maybeSendWeeklySummary(db: ReturnType<typeof createServiceRoleCli
 
 /**
  * Sends the Claude-written preview of the upcoming week's drafted-team
- * matchups on that week's first game day (its earliest kickoff, by
- * America/New_York calendar date — not UTC, since a Thursday-night
- * kickoff at 8:20pm ET is already Friday in UTC). Runs once a day
- * alongside the score sync, so it fires same-day the first time that
- * date is reached; app_settings tracks the last previewed week so it
- * only sends once per week even though this check runs daily.
+ * matchups on or after that week's first game day (its earliest kickoff,
+ * by America/New_York calendar date — not UTC, since a Thursday-night
+ * kickoff at 8:20pm ET is already Friday in UTC). "On or after," not an
+ * exact-day match, so a sync failure on the actual game day (ESPN's
+ * endpoint is unofficial and does occasionally error) doesn't permanently
+ * skip that week's preview — the next successful run catches up instead.
+ * app_settings tracks the last previewed week so it only ever sends once.
  */
 async function maybeSendWeeklyPreview(db: ReturnType<typeof createServiceRoleClient>) {
   const upcoming = await getUpcomingWeekFirstKickoff();
@@ -225,7 +237,7 @@ async function maybeSendWeeklyPreview(db: ReturnType<typeof createServiceRoleCli
 
   const easternDate = (d: Date) =>
     new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
-  if (easternDate(new Date()) !== easternDate(upcoming.firstKickoff)) return;
+  if (easternDate(new Date()) < easternDate(upcoming.firstKickoff)) return;
 
   const { data: setting } = await db
     .from("app_settings")
