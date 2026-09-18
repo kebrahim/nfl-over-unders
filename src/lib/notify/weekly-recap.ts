@@ -88,6 +88,8 @@ const RECAP_TONE_INSTRUCTIONS: Record<RecapTone, string> = {
 function buildRecapSystemPrompt(tone: RecapTone): string {
   return `You write a short group-text recap for 5 close friends in a season-long NFL prediction pool. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted (team, side) picks that played games this week, with the result and each team's current record.
 
+Each pick resolves on its own at season's end, purely from that one team's total wins vs. its own line — this week's result only nudges that team's own trend, nothing else. Two different drafted teams playing each other are unrelated bets, even in the same game — a win for one team says nothing about whether the other team's pick (or anyone else's) is on track, so don't invent a rivalry or a "one of you is wrong" storyline between them. The one real head-to-head is two people who drafted the exact same team on opposite sides (over vs. under) — that's worth calling out, since only one of them can end up right.
+
 ${RECAP_TONE_INSTRUCTIONS[tone]}
 
 Format: one bullet point per matchup worth calling out (2-4 bullets), each starting with "• " on its own line — real line breaks between bullets, not run together in one paragraph. Skip unremarkable picks if space is tight; spend the bullets on whoever's result mattered most. Keep each bullet to one short sentence. Don't include a title or header line — that's added separately. No hashtags, no markdown besides the bullet character, no emoji beyond an occasional 🏈.`;
@@ -259,9 +261,11 @@ const PREVIEW_TONE_INSTRUCTIONS: Record<RecapTone, string> = {
 function buildPreviewSystemPrompt(tone: RecapTone): string {
   return `You write a short group-text preview for 5 close friends in a season-long NFL prediction pool, previewing the upcoming week's games before they're played. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted teams' matchups this week, with each team's current record and win-total line.
 
+Each pick resolves on its own at season's end, purely from that one team's total wins vs. its own line — this week's game only nudges that team's own trend, nothing else. Two different drafted teams playing each other are unrelated bets, even in the same game — don't frame that as a "pool-vs-pool showdown" or claim one person's team winning says anything about someone else's pick. The one real head-to-head is two people who drafted the exact same team on opposite sides (over vs. under) — call that out if it comes up, since only one of them can end up right.
+
 ${PREVIEW_TONE_INSTRUCTIONS[tone]}
 
-Format: one bullet point per matchup worth calling out (2-4 bullets), each starting with "• " on its own line — real line breaks between bullets, not run together in one paragraph. Call out any matchup where two drafted teams play each other especially — that's a direct pool-vs-pool showdown. Skip unremarkable matchups if space is tight. Keep each bullet to one short sentence. Don't include a title or header line — that's added separately. No hashtags, no markdown besides the bullet character, no emoji beyond an occasional 🏈.`;
+Format: one bullet point per matchup worth calling out (2-4 bullets), each starting with "• " on its own line — real line breaks between bullets, not run together in one paragraph. Skip unremarkable matchups if space is tight. Keep each bullet to one short sentence. Don't include a title or header line — that's added separately. No hashtags, no markdown besides the bullet character, no emoji beyond an occasional 🏈.`;
 }
 
 /**
