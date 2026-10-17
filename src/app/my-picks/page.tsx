@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/current-user";
-import type { Division } from "@/lib/supabase/types";
+import type { Division, Side } from "@/lib/supabase/types";
 import { divisionPicksLocked, DIVISION_PICKS_LOCK_AT, teamsPlayingCurrentWeek } from "@/lib/domain/season";
 import { DIVISIONS } from "@/lib/domain/divisions";
+import { neededRemainingRecord, projectedWins } from "@/lib/domain/scoring";
 import {
   DEMO_DIVISION_PREDICTIONS,
   DEMO_PLAYERS,
@@ -35,6 +36,8 @@ export default async function MyPicksPage() {
     team_id: number;
     side: string;
     wins: number;
+    losses: number;
+    ties: number;
     games_played: number;
     win_total_line: number | null;
     resolved: boolean;
@@ -76,7 +79,7 @@ export default async function MyPicksPage() {
       supabase
         .from("draft_pick_scores")
         .select(
-          "pick_id, team_id, side, wins, games_played, win_total_line, resolved, correct, points",
+          "pick_id, team_id, side, wins, losses, ties, games_played, win_total_line, resolved, correct, points",
         )
         .eq("user_id", profile.id),
       supabase.from("teams").select("id, name, code, conference, division"),
@@ -158,6 +161,8 @@ export default async function MyPicksPage() {
                 <th className="px-4 py-2 font-medium text-ink-muted">Side</th>
                 <th className="px-4 py-2 font-medium text-ink-muted">Line</th>
                 <th className="px-4 py-2 font-medium text-ink-muted">Record</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Trend</th>
+                <th className="px-4 py-2 font-medium text-ink-muted">Needs</th>
                 <th className="px-4 py-2 font-medium text-ink-muted">Points</th>
               </tr>
             </thead>
@@ -165,6 +170,20 @@ export default async function MyPicksPage() {
               {pickScores.map((pick) => {
                 const team = teamById.get(pick.team_id);
                 const onBye = teamsOnByeThisWeek?.has(pick.team_id) ?? false;
+                const side = pick.side as Side;
+                const line = pick.win_total_line;
+                const projected = projectedWins(pick.wins, pick.games_played);
+                const trend =
+                  line != null && projected != null
+                    ? {
+                        projected,
+                        direction: projected > line ? "over" : projected < line ? "under" : "push",
+                      }
+                    : null;
+                const needed =
+                  line != null
+                    ? neededRemainingRecord(pick.wins, pick.games_played, line, side)
+                    : null;
                 return (
                   <tr key={pick.pick_id} className="border-t border-border">
                     <td className="px-4 py-2 font-medium">
@@ -179,9 +198,44 @@ export default async function MyPicksPage() {
                       </div>
                     </td>
                     <td className="px-4 py-2 capitalize">{pick.side}</td>
-                    <td className="px-4 py-2">{pick.win_total_line ?? "—"}</td>
+                    <td className="px-4 py-2">{line ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-muted">
-                      {pick.wins}-{pick.games_played - pick.wins} ({pick.games_played}/17)
+                      {pick.wins}-{pick.losses}
+                      {pick.ties ? `-${pick.ties}` : ""}
+                    </td>
+                    <td className="px-4 py-2">
+                      {pick.resolved ? (
+                        <span className="text-ink-muted">Final</span>
+                      ) : trend ? (
+                        <span
+                          className={
+                            trend.direction === "push"
+                              ? "text-ink-muted"
+                              : trend.direction === side
+                                ? "text-good"
+                                : "text-bad"
+                          }
+                        >
+                          {trend.direction === "push"
+                            ? "on the line"
+                            : `${Math.round(trend.projected)} proj. (${trend.direction})`}
+                        </span>
+                      ) : (
+                        <span className="text-ink-muted">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      {needed == null ? (
+                        <span className="text-ink-muted">—</span>
+                      ) : needed.status === "clinched" ? (
+                        <span className="text-good">Clinched</span>
+                      ) : needed.status === "eliminated" ? (
+                        <span className="text-bad">Eliminated</span>
+                      ) : (
+                        <span className="text-ink-muted">
+                          {needed.wins}-{needed.losses} the rest of the way
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2 font-semibold text-accent">
                       {pick.resolved ? pick.points : "pending"}
@@ -191,7 +245,7 @@ export default async function MyPicksPage() {
               })}
               {pickScores.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-ink-muted">
+                  <td colSpan={7} className="px-4 py-6 text-center text-ink-muted">
                     No picks yet — head to the draft.
                   </td>
                 </tr>

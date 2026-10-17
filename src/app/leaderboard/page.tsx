@@ -28,6 +28,8 @@ type PickScore = {
   team_id: number;
   side: string;
   wins: number;
+  losses: number;
+  ties: number;
   games_played: number;
   win_total_line: number | null;
   resolved: boolean;
@@ -77,7 +79,9 @@ export default async function LeaderboardPage() {
       supabase.from("league_total_points").select("total_points, games_final").single(),
       supabase
         .from("draft_pick_scores")
-        .select("pick_id, user_id, team_id, side, wins, games_played, win_total_line, resolved, points")
+        .select(
+          "pick_id, user_id, team_id, side, wins, losses, ties, games_played, win_total_line, resolved, points",
+        )
         .order("pick_number"),
       supabase.from("teams").select("id, name, code"),
       // RLS decides what's actually visible here: your own row always,
@@ -261,7 +265,8 @@ export default async function LeaderboardPage() {
                         <td className="px-4 py-1.5 capitalize">{pick.side}</td>
                         <td className="px-4 py-1.5">{line ?? "—"}</td>
                         <td className="px-4 py-1.5 text-ink-muted">
-                          {pick.wins}-{pick.games_played - pick.wins}
+                          {pick.wins}-{pick.losses}
+                          {pick.ties ? `-${pick.ties}` : ""}
                         </td>
                         <td className="px-4 py-1.5">
                           {pick.resolved ? (

@@ -177,6 +177,8 @@ export function demoDraftPickScores(userId?: string) {
       round: pick.round,
       pick_number: pick.pick_number,
       wins: record.wins,
+      losses: record.losses,
+      ties: record.ties,
       games_played: record.games_played,
       win_total_line: team.win_total_line,
       resolved: score.resolved,

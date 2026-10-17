@@ -221,6 +221,8 @@ export interface Database {
           resolved: boolean;
           correct: boolean | null;
           points: number;
+          losses: number;
+          ties: number;
         };
         Relationships: [];
       };
