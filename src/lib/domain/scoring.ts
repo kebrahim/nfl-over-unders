@@ -59,6 +59,40 @@ export function neededWinsToHit(winTotalLine: number, side: Side): number {
   return side === "over" ? Math.floor(winTotalLine) + 1 : Math.ceil(winTotalLine) - 1;
 }
 
+export type NeededRecord =
+  | { status: "clinched" }
+  | { status: "eliminated" }
+  | { status: "live"; wins: number; losses: number };
+
+/**
+ * The record a pick's team needs over its remaining games for the pick
+ * to end up correct — e.g. "needs 5-4 or better over its last 9" for an
+ * over. "clinched" means the pick is already guaranteed correct no
+ * matter how the rest of the season goes; "eliminated" means it can no
+ * longer be correct no matter how the rest of the season goes.
+ */
+export function neededRemainingRecord(
+  wins: number,
+  gamesPlayed: number,
+  winTotalLine: number,
+  side: Side,
+): NeededRecord {
+  const remaining = REGULAR_SEASON_GAMES_PER_TEAM - gamesPlayed;
+  const target = neededWinsToHit(winTotalLine, side);
+
+  if (side === "over") {
+    const winsNeeded = target - wins;
+    if (winsNeeded <= 0) return { status: "clinched" };
+    if (winsNeeded > remaining) return { status: "eliminated" };
+    return { status: "live", wins: winsNeeded, losses: remaining - winsNeeded };
+  }
+
+  const winsAllowed = target - wins;
+  if (winsAllowed < 0) return { status: "eliminated" };
+  if (winsAllowed >= remaining) return { status: "clinched" };
+  return { status: "live", wins: winsAllowed, losses: remaining - winsAllowed };
+}
+
 /**
  * Projects the league-wide total-points pace across all 272 regular-
  * season games, for display only (the leaderboard's "on pace" figure) —

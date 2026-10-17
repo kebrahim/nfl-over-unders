@@ -4,7 +4,7 @@ import { TeamLogo } from "@/components/team-logo";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import { divisionPicksLocked, teamsPlayingCurrentWeek } from "@/lib/domain/season";
 import {
-  neededWinsToHit,
+  neededRemainingRecord,
   projectedLeaguePoints,
   projectedWins,
   TOTAL_REGULAR_SEASON_GAMES,
@@ -220,9 +220,9 @@ export default async function LeaderboardPage() {
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Team</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Side</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Line</th>
-                    <th className="px-4 py-1.5 font-medium text-ink-muted">Needs</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Record</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Trend</th>
+                    <th className="px-4 py-1.5 font-medium text-ink-muted">Needs</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Points</th>
                   </tr>
                 </thead>
@@ -232,7 +232,6 @@ export default async function LeaderboardPage() {
                     const onBye = teamsOnByeThisWeek?.has(pick.team_id) ?? false;
                     const side = pick.side as Side;
                     const line = pick.win_total_line;
-                    const needed = line != null ? neededWinsToHit(line, side) : null;
                     const projected = projectedWins(pick.wins, pick.games_played);
                     const trend =
                       line != null && projected != null
@@ -241,6 +240,10 @@ export default async function LeaderboardPage() {
                             direction:
                               projected > line ? "over" : projected < line ? "under" : "push",
                           }
+                        : null;
+                    const needed =
+                      line != null
+                        ? neededRemainingRecord(pick.wins, pick.games_played, line, side)
                         : null;
                     return (
                       <tr key={pick.pick_id} className="border-t border-border">
@@ -258,14 +261,7 @@ export default async function LeaderboardPage() {
                         <td className="px-4 py-1.5 capitalize">{pick.side}</td>
                         <td className="px-4 py-1.5">{line ?? "—"}</td>
                         <td className="px-4 py-1.5 text-ink-muted">
-                          {needed != null
-                            ? side === "over"
-                              ? `${needed}+ wins`
-                              : `${needed} or fewer wins`
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-1.5 text-ink-muted">
-                          {pick.wins}-{pick.games_played - pick.wins} ({pick.games_played}/17)
+                          {pick.wins}-{pick.games_played - pick.wins}
                         </td>
                         <td className="px-4 py-1.5">
                           {pick.resolved ? (
@@ -286,6 +282,19 @@ export default async function LeaderboardPage() {
                             </span>
                           ) : (
                             <span className="text-ink-muted">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-1.5">
+                          {needed == null ? (
+                            <span className="text-ink-muted">—</span>
+                          ) : needed.status === "clinched" ? (
+                            <span className="text-good">Clinched</span>
+                          ) : needed.status === "eliminated" ? (
+                            <span className="text-bad">Eliminated</span>
+                          ) : (
+                            <span className="text-ink-muted">
+                              {needed.wins}-{needed.losses} the rest of the way
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-1.5 font-semibold text-accent">
