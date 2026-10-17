@@ -50,6 +50,16 @@ export function projectedWins(wins: number, gamesPlayed: number): number | null 
 }
 
 /**
+ * The win count a pick needs to hit for its side to be correct — the
+ * minimum win total for an over, the maximum for an under. Mirrors the
+ * strict inequality in scorePick/draft_pick_scores (a team landing
+ * exactly on the line is a loss either way, so there's no "or push").
+ */
+export function neededWinsToHit(winTotalLine: number, side: Side): number {
+  return side === "over" ? Math.floor(winTotalLine) + 1 : Math.ceil(winTotalLine) - 1;
+}
+
+/**
  * Projects the league-wide total-points pace across all 272 regular-
  * season games, for display only (the leaderboard's "on pace" figure) —
  * relevant to the tiebreaker, which guesses this same final total.

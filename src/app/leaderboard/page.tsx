@@ -3,7 +3,12 @@ import { getCurrentProfile } from "@/lib/supabase/current-user";
 import { TeamLogo } from "@/components/team-logo";
 import { DIVISIONS } from "@/lib/domain/divisions";
 import { divisionPicksLocked, teamsPlayingCurrentWeek } from "@/lib/domain/season";
-import { projectedLeaguePoints, TOTAL_REGULAR_SEASON_GAMES } from "@/lib/domain/scoring";
+import {
+  neededWinsToHit,
+  projectedLeaguePoints,
+  projectedWins,
+  TOTAL_REGULAR_SEASON_GAMES,
+} from "@/lib/domain/scoring";
 import { getLastSyncedAt } from "@/lib/domain/sync-status";
 import {
   DEMO_DIVISION_PREDICTIONS,
@@ -13,7 +18,7 @@ import {
   demoDraftPickScores,
   demoOverallLeaderboard,
 } from "@/lib/demo/data";
-import type { Division } from "@/lib/supabase/types";
+import type { Division, Side } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
@@ -215,7 +220,9 @@ export default async function LeaderboardPage() {
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Team</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Side</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Line</th>
+                    <th className="px-4 py-1.5 font-medium text-ink-muted">Needs</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Record</th>
+                    <th className="px-4 py-1.5 font-medium text-ink-muted">Trend</th>
                     <th className="px-4 py-1.5 font-medium text-ink-muted">Points</th>
                   </tr>
                 </thead>
@@ -223,6 +230,18 @@ export default async function LeaderboardPage() {
                   {picks.map((pick) => {
                     const team = teamById.get(pick.team_id);
                     const onBye = teamsOnByeThisWeek?.has(pick.team_id) ?? false;
+                    const side = pick.side as Side;
+                    const line = pick.win_total_line;
+                    const needed = line != null ? neededWinsToHit(line, side) : null;
+                    const projected = projectedWins(pick.wins, pick.games_played);
+                    const trend =
+                      line != null && projected != null
+                        ? {
+                            projected,
+                            direction:
+                              projected > line ? "over" : projected < line ? "under" : "push",
+                          }
+                        : null;
                     return (
                       <tr key={pick.pick_id} className="border-t border-border">
                         <td className="px-4 py-1.5 font-medium">
@@ -237,9 +256,37 @@ export default async function LeaderboardPage() {
                           </div>
                         </td>
                         <td className="px-4 py-1.5 capitalize">{pick.side}</td>
-                        <td className="px-4 py-1.5">{pick.win_total_line ?? "—"}</td>
+                        <td className="px-4 py-1.5">{line ?? "—"}</td>
+                        <td className="px-4 py-1.5 text-ink-muted">
+                          {needed != null
+                            ? side === "over"
+                              ? `${needed}+ wins`
+                              : `${needed} or fewer wins`
+                            : "—"}
+                        </td>
                         <td className="px-4 py-1.5 text-ink-muted">
                           {pick.wins}-{pick.games_played - pick.wins} ({pick.games_played}/17)
+                        </td>
+                        <td className="px-4 py-1.5">
+                          {pick.resolved ? (
+                            <span className="text-ink-muted">Final</span>
+                          ) : trend ? (
+                            <span
+                              className={
+                                trend.direction === "push"
+                                  ? "text-ink-muted"
+                                  : trend.direction === side
+                                    ? "text-good"
+                                    : "text-bad"
+                              }
+                            >
+                              {trend.direction === "push"
+                                ? "on the line"
+                                : `${Math.round(trend.projected)} proj. (${trend.direction})`}
+                            </span>
+                          ) : (
+                            <span className="text-ink-muted">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-1.5 font-semibold text-accent">
                           {pick.resolved ? pick.points : "pending"}
@@ -249,7 +296,7 @@ export default async function LeaderboardPage() {
                   })}
                   {picks.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-4 text-center text-ink-muted">
+                      <td colSpan={7} className="px-4 py-4 text-center text-ink-muted">
                         No picks.
                       </td>
                     </tr>
