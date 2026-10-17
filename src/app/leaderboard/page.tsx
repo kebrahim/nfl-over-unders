@@ -298,9 +298,8 @@ export default async function LeaderboardPage() {
                             <span className="text-bad">Eliminated</span>
                           ) : (
                             <span className="text-ink-muted">
-                              {side === "over" ? "At least " : "At most "}
-                              {needed.wins} win{needed.wins === 1 ? "" : "s"} in its last{" "}
-                              {needed.wins + needed.losses}
+                              {side === "over" ? "≥" : "≤"}
+                              {needed.wins} of {needed.wins + needed.losses}
                             </span>
                           )}
                         </td>
