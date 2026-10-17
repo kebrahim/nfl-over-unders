@@ -233,7 +233,9 @@ export default async function MyPicksPage() {
                         <span className="text-bad">Eliminated</span>
                       ) : (
                         <span className="text-ink-muted">
-                          {needed.wins}-{needed.losses} the rest of the way
+                          {side === "over" ? "At least " : "At most "}
+                          {needed.wins} win{needed.wins === 1 ? "" : "s"} in its last{" "}
+                          {needed.wins + needed.losses}
                         </span>
                       )}
                     </td>
