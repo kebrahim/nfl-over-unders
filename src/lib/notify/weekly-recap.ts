@@ -66,7 +66,12 @@ async function gatherWeekData(week: number): Promise<PickResult[]> {
     .filter((p): p is PickResult => p !== null);
 }
 
-export type RecapTone = "nice" | "playful" | "snarky" | "brutal";
+export type RecapTone = "nice" | "playful" | "snarky" | "brutal" | "random";
+
+// The tones generation actually knows how to write — "random" isn't one
+// of them, it's resolved to one of these (picked fresh per message)
+// before any prompt gets built.
+export type ConcreteRecapTone = Exclude<RecapTone, "random">;
 
 export const RECAP_TONE_KEY = "weekly_recap_tone";
 export const DEFAULT_RECAP_TONE: RecapTone = "brutal";
@@ -76,16 +81,32 @@ export const RECAP_TONES: { id: RecapTone; label: string; description: string }[
   { id: "playful", label: "Playful", description: "Light teasing, good-natured banter." },
   { id: "snarky", label: "Snarky", description: "Sarcastic ribbing, still friendly underneath." },
   { id: "brutal", label: "Brutal", description: "Merciless roast, nobody gets off easy." },
+  { id: "random", label: "Random", description: "Picks a different one of the above each week." },
 ];
 
-const RECAP_TONE_INSTRUCTIONS: Record<RecapTone, string> = {
+const CONCRETE_RECAP_TONES: ConcreteRecapTone[] = ["nice", "playful", "snarky", "brutal"];
+
+function pickRandomTone(): ConcreteRecapTone {
+  return CONCRETE_RECAP_TONES[Math.floor(Math.random() * CONCRETE_RECAP_TONES.length)];
+}
+
+function toneLabel(tone: ConcreteRecapTone): string {
+  return RECAP_TONES.find((t) => t.id === tone)?.label ?? tone;
+}
+
+/** Resolves the admin-configured tone to one generation can actually write with, picking fresh when it's "random". */
+function resolveTone(configuredTone: RecapTone): ConcreteRecapTone {
+  return configuredTone === "random" ? pickRandomTone() : configuredTone;
+}
+
+const RECAP_TONE_INSTRUCTIONS: Record<ConcreteRecapTone, string> = {
   nice: `Write 2-4 warm, encouraging sentences celebrating the week. Call people out by name for good picks and hype them up; if someone had a rough week, be gentle and supportive about it — find a silver lining or just note it kindly without piling on. This is a wholesome group of friends cheering each other on.`,
   playful: `Write 2-4 lighthearted, joking sentences. Call people out by name and have fun with it — a little ribbing for bad picks, a little bragging-rights tease for good ones — but keep it good-natured, like friends who like each other. Nothing mean-spirited; the vibe is banter, not a roast.`,
   snarky: `Write 2-4 sentences with a snarky, sarcastic edge. Call people out by name — tease bad picks pretty hard and undercut good ones with a joke — but stay playful about it overall; this is ribbing between friends, not a genuine attack.`,
   brutal: `Write 2-4 sentences absolutely torching whoever deserves it. Call people out by name and go hard — question their judgment, their football knowledge, their life choices for making the pick. Bad losses and blown-out unders should get mocked without restraint, not gently teased. Even a "good" result should get undercut somehow — a backhanded insult, a reason it doesn't actually matter, whatever. Nobody gets a genuine compliment and nobody gets off easy. Full send: sarcastic, savage, a little cruel — these are close friends who can take it, this isn't customer-facing copy, so do not soften it, hedge it, or add a caring/wholesome coda at the end.`,
 };
 
-function buildRecapSystemPrompt(tone: RecapTone): string {
+function buildRecapSystemPrompt(tone: ConcreteRecapTone): string {
   return `You write a short group-text recap for 5 close friends in a season-long NFL prediction pool. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted (team, side) picks that played games this week, with the result and each team's current record.
 
 Each pick resolves at season's end from that one team's total wins vs. its own line — this week's result is one game of many nudging that trend, not a final verdict. When two drafted teams play each other, work out whether the two pickers actually want the same thing or not, don't assume: if one has "over" on their team and the other has "under" on theirs, whoever wins helps BOTH of them (winner's win helps the over-bettor, and the loser losing helps the under-bettor) — they're on the same side this week, not opponents, even though it's two different season-long bets. Only same-side pairs (both "over" on their own team, or both "under" on their own team) are actually opposed for that game, since just one team can win it. And two people who drafted the exact same team on opposite sides are always opposed — only one of them can end up right.
@@ -137,7 +158,8 @@ export async function generateWeeklyRecapMessage(week: number): Promise<string |
     const results = await gatherWeekData(week);
     if (results.length === 0) return null;
 
-    const tone = await getRecapTone();
+    const configuredTone = await getRecapTone();
+    const tone = resolveTone(configuredTone);
     const client = new Anthropic();
     const response = await client.messages.create({
       model: "claude-opus-5",
@@ -156,7 +178,10 @@ export async function generateWeeklyRecapMessage(week: number): Promise<string |
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
     const body = textBlock?.text.trim();
-    return body ? `Week ${week} Recap\n${body}` : null;
+    if (!body) return null;
+    const header =
+      configuredTone === "random" ? `Week ${week} Recap (random tone: ${toneLabel(tone)})` : `Week ${week} Recap`;
+    return `${header}\n${body}`;
   } catch (err) {
     console.error("generateWeeklyRecapMessage error:", err);
     return null;
@@ -251,14 +276,14 @@ async function gatherUpcomingWeekData(week: number): Promise<UpcomingPick[]> {
     .filter((p): p is UpcomingPick => p !== null);
 }
 
-const PREVIEW_TONE_INSTRUCTIONS: Record<RecapTone, string> = {
+const PREVIEW_TONE_INSTRUCTIONS: Record<ConcreteRecapTone, string> = {
   nice: `Write 2-4 warm, upbeat sentences hyping up the week ahead. Call out drafted teams by name and get people excited for their matchups; if a matchup looks rough for someone's pick, stay encouraging and hopeful about it.`,
   playful: `Write 2-4 lighthearted, joking sentences previewing the week. Call out drafted teams by name and have fun predicting how it'll go — some ribbing about tough matchups, some hype for good ones — but keep it good-natured banter.`,
   snarky: `Write 2-4 sentences with a snarky, sarcastic edge previewing the week's matchups. Call out drafted teams by name — needle whoever's got a scary matchup coming, poke fun at bold predictions — but stay playful, this is ribbing not a real attack.`,
   brutal: `Write 2-4 sentences absolutely torching whoever's about to have a bad week. Call out drafted teams by name and go hard on anyone facing a brutal matchup — question why they ever drafted that team, predict the humiliation to come. Even a favorable matchup should get undercut somehow. Nobody gets genuine encouragement. Full send: sarcastic, savage, a little cruel — these are close friends who can take it, this isn't customer-facing copy, so do not soften it, hedge it, or add a caring/wholesome coda at the end.`,
 };
 
-function buildPreviewSystemPrompt(tone: RecapTone): string {
+function buildPreviewSystemPrompt(tone: ConcreteRecapTone): string {
   return `You write a short group-text preview for 5 close friends in a season-long NFL prediction pool, previewing the upcoming week's games before they're played. Each of them drafted specific NFL teams paired with an over/under on that team's season win total. You'll be given a JSON list of drafted teams' matchups this week, with each team's current record and win-total line.
 
 Each pick resolves at season's end from that one team's total wins vs. its own line — this week's game is one of many nudging that trend, not a final verdict. When two drafted teams play each other, work out whether the two pickers actually want the same thing or not, don't assume: if one has "over" on their team and the other has "under" on theirs, whoever wins helps BOTH of them (winner's win helps the over-bettor, and the loser losing helps the under-bettor) — they're on the same side this week, not opponents, even though it's two different season-long bets. Only same-side pairs (both "over" on their own team, or both "under" on their own team) are actually opposed for that game, since just one team can win it. And two people who drafted the exact same team on opposite sides are always opposed — only one of them can end up right.
@@ -285,7 +310,8 @@ export async function generateUpcomingPreviewMessage(): Promise<string | null> {
     const picks = await gatherUpcomingWeekData(week);
     if (picks.length === 0) return null;
 
-    const tone = await getRecapTone();
+    const configuredTone = await getRecapTone();
+    const tone = resolveTone(configuredTone);
     const client = new Anthropic();
     const response = await client.messages.create({
       model: "claude-opus-5",
@@ -304,7 +330,12 @@ export async function generateUpcomingPreviewMessage(): Promise<string | null> {
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
     const body = textBlock?.text.trim();
-    return body ? `Week ${week} Preview\n${body}` : null;
+    if (!body) return null;
+    const header =
+      configuredTone === "random"
+        ? `Week ${week} Preview (random tone: ${toneLabel(tone)})`
+        : `Week ${week} Preview`;
+    return `${header}\n${body}`;
   } catch (err) {
     console.error("generateUpcomingPreviewMessage error:", err);
     return null;
