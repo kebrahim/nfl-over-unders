@@ -67,7 +67,7 @@ export function SmsSetup({
     );
   }
 
-  async function sendGenerated(kind: "recap" | "preview", target: "self" | "group") {
+  async function sendGenerated(kind: "recap" | "preview" | "standings", target: "self" | "group") {
     setPending(true);
     setError(null);
     setResult(null);
@@ -90,6 +90,7 @@ export function SmsSetup({
     { key: "connectivity", label: "Connectivity test", onSend: sendConnectivityTest },
     { key: "recap", label: "Recap", onSend: (target) => sendGenerated("recap", target) },
     { key: "preview", label: "Preview", onSend: (target) => sendGenerated("preview", target) },
+    { key: "standings", label: "Standings update", onSend: (target) => sendGenerated("standings", target) },
   ];
 
   return (

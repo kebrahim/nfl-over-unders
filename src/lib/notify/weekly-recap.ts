@@ -90,12 +90,12 @@ function pickRandomTone(): ConcreteRecapTone {
   return CONCRETE_RECAP_TONES[Math.floor(Math.random() * CONCRETE_RECAP_TONES.length)];
 }
 
-function toneLabel(tone: ConcreteRecapTone): string {
+export function toneLabel(tone: ConcreteRecapTone): string {
   return RECAP_TONES.find((t) => t.id === tone)?.label ?? tone;
 }
 
 /** Resolves the admin-configured tone to one generation can actually write with, picking fresh when it's "random". */
-function resolveTone(configuredTone: RecapTone): ConcreteRecapTone {
+export function resolveTone(configuredTone: RecapTone): ConcreteRecapTone {
   return configuredTone === "random" ? pickRandomTone() : configuredTone;
 }
 

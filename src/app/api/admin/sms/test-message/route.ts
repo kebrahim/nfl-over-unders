@@ -6,8 +6,9 @@ import {
   generateUpcomingPreviewMessage,
   generateWeeklyRecapMessage,
 } from "@/lib/notify/weekly-recap";
+import { generateStandingsMessage } from "@/lib/notify/standings-summary";
 
-type Kind = "recap" | "preview";
+type Kind = "recap" | "preview" | "standings";
 type Target = "self" | "group";
 
 export async function POST(request: Request) {
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const kind: Kind = body?.kind;
   const target: Target = body?.target;
-  if (kind !== "recap" && kind !== "preview") {
+  if (kind !== "recap" && kind !== "preview" && kind !== "standings") {
     return NextResponse.json({ error: "Invalid kind." }, { status: 400 });
   }
   if (target !== "self" && target !== "group") {
@@ -45,8 +46,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No completed games yet to recap." }, { status: 400 });
     }
     message = await generateWeeklyRecapMessage(week);
-  } else {
+  } else if (kind === "preview") {
     message = await generateUpcomingPreviewMessage();
+  } else {
+    message = await generateStandingsMessage();
   }
   if (!message) {
     return NextResponse.json(

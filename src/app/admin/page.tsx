@@ -21,6 +21,7 @@ const MESSAGE_KIND_LABELS: Record<string, string> = {
   recap: "Recap",
   recap_fallback: "Recap (fallback)",
   preview: "Preview",
+  standings: "Standings update",
   connectivity_test: "Connectivity test",
 };
 
